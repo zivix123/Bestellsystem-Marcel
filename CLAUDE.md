@@ -42,7 +42,7 @@ Du arbeitest am **Yauno Lebensmittel Bestellsystem** – einem vollautomatischen
 ## Konfiguration (aktuelle Werte)
 
 ```
-n8n URL:        http://46.225.80.178:5678
+n8n URL:        https://winning-blessed-fantastic-soft.trycloudflare.com
 WebApp URL:     https://jade-alfajores-4f3440.netlify.app
 Telegram Bot:   Credential "Telegram account" in n8n
 Admin Chat ID:  1121266642
@@ -110,9 +110,9 @@ als Kategorie "Allgemein" eingeordnet.
 In `webapp/index.html` oben die Webhook-URLs eintragen:
 
 ```javascript
-const WEBHOOK_ARTIKEL        = 'http://46.225.80.178:5678/webhook/artikel';
-const WEBHOOK_BESTELLUNG     = 'http://46.225.80.178:5678/webhook/bestellung';
-const WEBHOOK_BESTELLUNG_GET = 'http://46.225.80.178:5678/webhook/bestellung-get';
+const WEBHOOK_ARTIKEL        = 'https://winning-blessed-fantastic-soft.trycloudflare.com/webhook/artikel';
+const WEBHOOK_BESTELLUNG     = 'https://winning-blessed-fantastic-soft.trycloudflare.com/webhook/bestellung';
+const WEBHOOK_BESTELLUNG_GET = 'https://winning-blessed-fantastic-soft.trycloudflare.com/webhook/bestellung-get';
 ```
 
 **Features:**
@@ -150,7 +150,7 @@ Für direkten n8n-Zugriff aus Claude Code heraus – in `.mcp.json` im Projektro
       "command": "npx",
       "args": ["-y", "@illuminaresystems/n8n-mcp-server"],
       "env": {
-        "N8N_HOST": "http://46.225.80.178:5678",
+        "N8N_HOST": "https://winning-blessed-fantastic-soft.trycloudflare.com",
         "N8N_API_KEY": "DEIN_N8N_API_KEY"
       }
     },
