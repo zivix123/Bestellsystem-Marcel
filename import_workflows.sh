@@ -132,6 +132,26 @@ if [ -f "$ID_FILE" ]; then
 fi
 
 if [ -n "$WF_ID" ]; then
+  # Prüfe ob Workflow archiviert ist und entarchiviere ggf.
+  IS_ARCHIVED=$(curl -s \
+    -H "X-N8N-API-KEY: $API_KEY" \
+    "$N8N_URL/api/v1/workflows/$WF_ID" 2>/dev/null | \
+    python3 -c "import sys,json; print(json.load(sys.stdin).get('archived', False))" 2>/dev/null)
+  if [ "$IS_ARCHIVED" = "True" ]; then
+    echo -n "   Entarchiviere Workflow... "
+    UNARCH_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+      -X PATCH \
+      -H "X-N8N-API-KEY: $API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"archived": false}' \
+      "$N8N_URL/api/v1/workflows/$WF_ID" 2>/dev/null)
+    if [ "$UNARCH_CODE" = "200" ]; then
+      echo -e "${GREEN}OK${NC}"
+    else
+      echo -e "${RED}Fehler (HTTP $UNARCH_CODE)${NC}"
+    fi
+  fi
+
   echo -n "3. Aktualisiere Workflow (ID: $WF_ID)... "
   RESPONSE=$(curl -s -w "\n%{http_code}" \
     -X PUT \
