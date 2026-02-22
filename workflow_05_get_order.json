@@ -4,7 +4,7 @@
     {
       "parameters": {
         "httpMethod": "GET",
-        "path": "bestellung",
+        "path": "bestellung-get",
         "responseMode": "responseNode",
         "options": {
           "allowedOrigins": "*"
@@ -21,18 +21,19 @@
       "parameters": {
         "url": "={{ $env.N8N_BASE_URL }}/webhook/admin-bestellungen",
         "options": {
-          "timeout": 5000
+          "timeout": 5000,
+          "allowUnauthorizedCerts": true
         }
       },
       "id": "fetch-orders",
-      "name": "Bestellungen von WF03 laden",
+      "name": "Bestelldaten von WF03 holen",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [420, 300]
     },
     {
       "parameters": {
-        "jsCode": "// Bestellung per Token laden (Daten kommen jetzt via HTTP von WF03)\nconst query = $('Webhook GET Bestellung').first().json.query || {};\nconst token = query.token;\n\nif (!token) {\n  return [{ json: { \n    error: 'Token parameter fehlt', \n    code: 400 \n  }}];\n}\n\nconst orderData = $('Bestellungen von WF03 laden').first().json;\nconst tokens = orderData.tokens || {};\nconst chatId = tokens[token];\n\nif (!chatId) {\n  return [{ json: { \n    error: 'Ungültiger oder abgelaufener Token', \n    code: 404 \n  }}];\n}\n\nconst bestellungen = orderData.bestellungen || {};\nconst bestellung = bestellungen[chatId];\n\nif (!bestellung) {\n  return [{ json: { \n    error: 'Bestellung nicht gefunden', \n    code: 404 \n  }}];\n}\n\nreturn [{ json: {\n  chatId: bestellung.chatId,\n  userName: bestellung.userName,\n  positionen: bestellung.positionen,\n  gesamtpreis: bestellung.gesamtpreis,\n  token: token,\n  zeitpunkt: bestellung.zeitpunkt,\n  code: 200\n}}];"
+        "jsCode": "// Bestellung per Token laden (Daten kommen von WF03)\nconst query = $('Webhook GET Bestellung').first().json.query || {};\nconst token = query.token;\n\nif (!token) {\n  return [{ json: { \n    error: 'Token parameter fehlt', \n    code: 400 \n  }}];\n}\n\nconst data = $input.first().json;\nconst tokens = data.tokens || {};\nconst chatId = tokens[token];\n\nif (!chatId) {\n  return [{ json: { \n    error: 'Ungültiger oder abgelaufener Token', \n    code: 404 \n  }}];\n}\n\nconst bestellungen = data.bestellungen || {};\nconst bestellung = bestellungen[chatId];\n\nif (!bestellung) {\n  return [{ json: { \n    error: 'Bestellung nicht gefunden', \n    code: 404 \n  }}];\n}\n\nreturn [{ json: {\n  chatId: bestellung.chatId,\n  userName: bestellung.userName,\n  positionen: bestellung.positionen,\n  gesamtpreis: bestellung.gesamtpreis,\n  token: token,\n  zeitpunkt: bestellung.zeitpunkt,\n  code: 200\n}}];"
       },
       "id": "load-order-by-token",
       "name": "Bestellung per Token laden",
@@ -61,9 +62,9 @@
   ],
   "connections": {
     "Webhook GET Bestellung": {
-      "main": [[{ "node": "Bestellungen von WF03 laden", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Bestelldaten von WF03 holen", "type": "main", "index": 0 }]]
     },
-    "Bestellungen von WF03 laden": {
+    "Bestelldaten von WF03 holen": {
       "main": [[{ "node": "Bestellung per Token laden", "type": "main", "index": 0 }]]
     },
     "Bestellung per Token laden": {

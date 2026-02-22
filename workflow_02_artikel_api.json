@@ -21,18 +21,20 @@
       "parameters": {
         "url": "={{ $env.N8N_BASE_URL }}/webhook/admin-artikel",
         "options": {
-          "timeout": 5000
+          "timeout": 5000,
+          "allowUnauthorizedCerts": true
         }
       },
       "id": "fetch-artikel",
-      "name": "Artikel von WF01 laden",
+      "name": "Artikel von WF01 holen",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [420, 300]
+      "position": [420, 300],
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "// Daten aus WF01 Admin-Endpoint aufbereiten\nconst data = $input.first().json;\n\nreturn [{ json: {\n  artikel: data.artikel || [],\n  bestellung_aktiv: data.bestellung_aktiv !== false,\n  angebot_datum: data.angebot_datum || '',\n  timestamp: new Date().toISOString()\n}}];"
+        "jsCode": "const input = $input.first().json;\n\n// Prüfe ob HTTP-Request erfolgreich war\nconst artikel = input.artikel || [];\nconst bestellung_aktiv = input.bestellung_aktiv !== undefined ? input.bestellung_aktiv : false;\nconst angebot_datum = input.angebot_datum || '';\n\nreturn [{ json: {\n  artikel: artikel,\n  bestellung_aktiv: bestellung_aktiv,\n  angebot_datum: angebot_datum,\n  timestamp: new Date().toISOString()\n}}];"
       },
       "id": "prepare-response",
       "name": "Artikelliste vorbereiten",
@@ -67,9 +69,9 @@
   ],
   "connections": {
     "Webhook Artikel": {
-      "main": [[{ "node": "Artikel von WF01 laden", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Artikel von WF01 holen", "type": "main", "index": 0 }]]
     },
-    "Artikel von WF01 laden": {
+    "Artikel von WF01 holen": {
       "main": [[{ "node": "Artikelliste vorbereiten", "type": "main", "index": 0 }]]
     },
     "Artikelliste vorbereiten": {

@@ -17,7 +17,7 @@ Admin lädt Excel hoch → Telegram Bot
 
 ## 1. Voraussetzungen
 
-- **n8n** läuft auf `https://tracker-rubber-animation-accommodations.trycloudflare.com`
+- **n8n** läuft auf `http://46.225.80.178:5678`
 - **Telegram Bot** erstellt via @BotFather
 - **Netlify** Account (oder alternatives Hosting für die WebApp)
 
@@ -42,11 +42,12 @@ Die Datei `webapp/index.html` auf Netlify deployen:
 2. `webapp/` Ordner hochladen
 3. URL notieren (z.B. `https://jade-alfajores-4f3440.netlify.app`)
 
-**Base-URL anpassen** (in index.html, nur diese eine Zeile ändern):
+**Webhook-URLs anpassen** (in index.html, Zeilen 1-3 im Script):
 ```javascript
-const N8N_BASE_URL = 'https://DEINE-CLOUDFLARE-URL';
+const WEBHOOK_ARTIKEL        = 'https://DEINE-CLOUDFLARE-URL/webhook/artikel';
+const WEBHOOK_BESTELLUNG     = 'https://DEINE-CLOUDFLARE-URL/webhook/bestellung';
+const WEBHOOK_BESTELLUNG_GET = 'https://DEINE-CLOUDFLARE-URL/webhook/bestellung';
 ```
-Die drei Webhook-URLs werden automatisch daraus abgeleitet.
 
 ---
 
@@ -63,30 +64,14 @@ chmod +x cloudflared
 ./cloudflared tunnel --url http://localhost:5678
 ```
 
-Die generierte `https://xxx.trycloudflare.com` URL dann an **2 Stellen** eintragen:
-1. **n8n Umgebungsvariable** `N8N_BASE_URL` setzen (z.B. in Docker: `-e N8N_BASE_URL=https://xxx.trycloudflare.com`)
-2. **WebApp** `webapp/index.html` → `N8N_BASE_URL` anpassen
-
-Die Workflows lesen die URL automatisch aus `$env.N8N_BASE_URL`.
-
----
-
-## 5. WebApp-URL zentral konfigurieren
-
-Die WebApp-URL wird über die **Static Data** der Workflows verwaltet. So musst du sie nur an **einer Stelle** ändern:
-
-1. In n8n: Workflow **01** öffnen → **Settings** (Zahnrad) → **Static Data**
-2. Im JSON den Wert von `webapp_url` anpassen:
-   ```json
-   "webapp_url": "https://deine-app.netlify.app"
-   ```
-3. Speichern – Workflow 03 liest die URL automatisch aus der geteilten Static Data.
-
-> Falls die Workflows separate Static Data verwenden, muss `webapp_url` auch in Workflow 03 angepasst werden.
+Die generierte `https://xxx.trycloudflare.com` URL dann:
+- In n8n: Settings → Webhook URL eintragen
+- In `webapp/index.html`: Webhook-URLs aktualisieren
+- Bei @BotFather: Webhook setzen
 
 ---
 
-## 6. Workflows in n8n importieren
+## 5. Workflows in n8n importieren
 
 Für jeden Workflow in `workflows/`:
 
@@ -94,6 +79,7 @@ Für jeden Workflow in `workflows/`:
 2. JSON-Datei auswählen
 3. **Platzhalter ersetzen** in allen Workflows:
    - `ADMIN_CHAT_ID_HIER` → Deine Telegram Chat-ID (erfährst du via @userinfobot)
+   - `https://jade-alfajores-4f3440.netlify.app` → Deine Netlify-URL
 4. Telegram Credential zuweisen (falls nötig)
 5. Workflows aktivieren
 
@@ -106,11 +92,9 @@ Für jeden Workflow in `workflows/`:
 | 04 | workflow_04_abschluss.json | Bestellschluss + Excel | Cron Mi 20:00 |
 | 05 | workflow_05_get_order.json | Bestellung laden (Edit) | GET Webhook |
 
-> **Hinweis:** Die Workflows 01 und 03 verwenden `webapp_url` aus der Static Data für die WebApp-URL. Stelle sicher, dass die URL in Schritt 5 korrekt gesetzt ist.
-
 ---
 
-## 7. Static Data – Wichtiger Hinweis
+## 6. Static Data – Wichtiger Hinweis
 
 Die Workflows kommunizieren über `staticData`. **Alle 5 Workflows müssen Zugriff auf die gleichen Daten haben.**
 
@@ -130,7 +114,7 @@ fs.writeFileSync('/data/yauno-state.json', JSON.stringify(data));
 
 ---
 
-## 8. Excel-Format für Angebote
+## 7. Excel-Format für Angebote
 
 Die hochgeladene Excel-Datei muss folgendem Format entsprechen:
 
@@ -151,7 +135,7 @@ Sonderzeilen:
 
 ---
 
-## 9. Testen
+## 8. Testen
 
 1. **Bot starten**: `/start` an den Bot senden
 2. **Excel hochladen**: Eine Bestelliste als Admin an den Bot senden
@@ -162,7 +146,7 @@ Sonderzeilen:
 
 ---
 
-## 10. Käufer registrieren
+## 9. Käufer registrieren
 
 Käufer werden automatisch registriert, sobald sie ihre erste Bestellung aufgeben. Ihre Chat-ID wird in der `kaeufer`-Liste gespeichert und sie werden bei neuen Angeboten benachrichtigt.
 
