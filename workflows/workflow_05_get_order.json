@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "url": "http://localhost:5678/webhook/admin-bestellungen",
+        "url": "https://univ-province-validity-jimmy.trycloudflare.com/webhook/admin-bestellungen",
         "options": {
           "timeout": 5000
         }

@@ -42,7 +42,7 @@ Du arbeitest am **Yauno Lebensmittel Bestellsystem** – einem vollautomatischen
 ## Konfiguration (aktuelle Werte)
 
 ```
-n8n URL:        https://conclusion-eminem-excessive-admit.trycloudflare.com
+n8n URL:        https://univ-province-validity-jimmy.trycloudflare.com
 WebApp URL:     https://jade-alfajores-4f3440.netlify.app
 Telegram Bot:   Credential "Telegram account" in n8n
 Admin Chat ID:  1121266642
@@ -88,7 +88,7 @@ Die Workflows kommunizieren über `$getWorkflowStaticData('global')`:
 
 **Wichtig:** Jeder Workflow hat seine eigene Static Data (`$getWorkflowStaticData('global')`
 ist pro Workflow isoliert). Die Daten-Workflows (01, 03) stellen interne Admin-Webhooks
-bereit, über die andere Workflows per HTTP Request (`http://localhost:5678/webhook/...`)
+bereit, über die andere Workflows per HTTP Request (`https://univ-province-validity-jimmy.trycloudflare.com/webhook/...`)
 auf die Daten zugreifen:
 - **WF 01** → `GET /webhook/admin-artikel` (Artikeldaten, Bestellstatus, Datum)
 - **WF 03** → `GET /webhook/admin-bestellungen` (alle Bestellungen, Tokens)
@@ -123,9 +123,9 @@ als Kategorie "Allgemein" eingeordnet.
 In `webapp/index.html` oben die Webhook-URLs eintragen:
 
 ```javascript
-const WEBHOOK_ARTIKEL        = 'https://conclusion-eminem-excessive-admit.trycloudflare.com/webhook/artikel';
-const WEBHOOK_BESTELLUNG     = 'https://conclusion-eminem-excessive-admit.trycloudflare.com/webhook/bestellung';
-const WEBHOOK_BESTELLUNG_GET = 'https://conclusion-eminem-excessive-admit.trycloudflare.com/webhook/bestellung-get';
+const WEBHOOK_ARTIKEL        = 'https://univ-province-validity-jimmy.trycloudflare.com/webhook/artikel';
+const WEBHOOK_BESTELLUNG     = 'https://univ-province-validity-jimmy.trycloudflare.com/webhook/bestellung';
+const WEBHOOK_BESTELLUNG_GET = 'https://univ-province-validity-jimmy.trycloudflare.com/webhook/bestellung-get';
 ```
 
 **Features:**
@@ -142,14 +142,14 @@ const WEBHOOK_BESTELLUNG_GET = 'https://conclusion-eminem-excessive-admit.tryclo
 
 1. **HTTPS für Telegram Webhook fehlt** – n8n läuft auf HTTP. Lösung: Cloudflare Tunnel
    ```bash
-   cloudflared tunnel --url http://localhost:5678
+   cloudflared tunnel --url https://univ-province-validity-jimmy.trycloudflare.com
    ```
    Dann in n8n: Settings → Webhook URL → Cloudflare-URL eintragen
 
 2. **Static Data Isolation** – ~~Gelöst!~~ Workflows 01 und 03 bieten jetzt interne
    Admin-Webhooks an (`/webhook/admin-artikel`, `/webhook/admin-bestellungen`,
    `/webhook/admin-close`). Die Consumer-Workflows (02, 04, 05) rufen diese
-   per HTTP Request auf `http://localhost:5678` ab.
+   per HTTP Request auf `https://univ-province-validity-jimmy.trycloudflare.com` ab.
 
 ---
 
@@ -164,7 +164,7 @@ Für direkten n8n-Zugriff aus Claude Code heraus – in `.mcp.json` im Projektro
       "command": "npx",
       "args": ["-y", "@illuminaresystems/n8n-mcp-server"],
       "env": {
-        "N8N_HOST": "https://conclusion-eminem-excessive-admit.trycloudflare.com",
+        "N8N_HOST": "https://univ-province-validity-jimmy.trycloudflare.com",
         "N8N_API_KEY": "DEIN_N8N_API_KEY"
       }
     },

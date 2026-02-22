@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "url": "http://localhost:5678/webhook/admin-bestellungen",
+        "url": "https://univ-province-validity-jimmy.trycloudflare.com/webhook/admin-bestellungen",
         "options": {
           "timeout": 10000
         }
@@ -33,7 +33,7 @@
     },
     {
       "parameters": {
-        "url": "http://localhost:5678/webhook/admin-artikel",
+        "url": "https://univ-province-validity-jimmy.trycloudflare.com/webhook/admin-artikel",
         "options": {
           "timeout": 10000
         }
@@ -145,7 +145,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:5678/webhook/admin-close",
+        "url": "https://univ-province-validity-jimmy.trycloudflare.com/webhook/admin-close",
         "options": {
           "timeout": 10000
         }
@@ -177,7 +177,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:5678/webhook/admin-close",
+        "url": "https://univ-province-validity-jimmy.trycloudflare.com/webhook/admin-close",
         "options": {
           "timeout": 10000
         }
