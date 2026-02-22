@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Bestellfenster schließen und Daten sammeln\nconst staticData = $getWorkflowStaticData('global');\nstaticData.bestellung_aktiv = false;\n\nconst bestellungen = staticData.bestellungen || {};\nconst artikel = staticData.artikel || [];\nconst datum = staticData.angebot_datum || '';\n\nconst alleBestellungen = Object.values(bestellungen);\n\nif (alleBestellungen.length === 0) {\n  return [{ json: { \n    leer: true, \n    message: 'Keine Bestellungen eingegangen',\n    datum: datum\n  }}];\n}\n\n// Zusammenfassung erstellen\nlet artikelSummen = {};\nlet gesamtUmsatz = 0;\n\nalleBestellungen.forEach(best => {\n  (best.positionen || []).forEach(pos => {\n    const key = pos.artikelId || pos.name;\n    if (!artikelSummen[key]) {\n      artikelSummen[key] = {\n        name: pos.name,\n        einheit: pos.einheit,\n        preis: pos.preis,\n        gesamtMenge: 0,\n        gesamtSumme: 0\n      };\n    }\n    artikelSummen[key].gesamtMenge += pos.menge;\n    artikelSummen[key].gesamtSumme += pos.summe || (pos.menge * pos.preis);\n  });\n  gesamtUmsatz += best.gesamtpreis || 0;\n});\n\n// Daten für Excel vorbereiten\nconst excelRows = [];\n\n// Header\nexcelRows.push({\n  A: 'Yauno Bestellauswertung',\n  B: '',\n  C: '',\n  D: '',\n  E: ''\n});\nexcelRows.push({\n  A: 'Lieferdatum: ' + datum,\n  B: '',\n  C: 'Erstellt: ' + new Date().toLocaleString('de-DE'),\n  D: '',\n  E: ''\n});\nexcelRows.push({ A: '', B: '', C: '', D: '', E: '' });\n\n// TEIL 1: Artikel-Zusammenfassung\nexcelRows.push({\n  A: 'ARTIKELÜBERSICHT',\n  B: '',\n  C: '',\n  D: '',\n  E: ''\n});\nexcelRows.push({\n  A: 'Artikel',\n  B: 'Einheit',\n  C: 'Einzelpreis',\n  D: 'Gesamt Menge',\n  E: 'Gesamt Summe'\n});\n\nObject.values(artikelSummen)\n  .sort((a, b) => a.name.localeCompare(b.name))\n  .forEach(art => {\n    excelRows.push({\n      A: art.name,\n      B: art.einheit,\n      C: art.preis,\n      D: art.gesamtMenge,\n      E: Math.round(art.gesamtSumme * 100) / 100\n    });\n  });\n\nexcelRows.push({ A: '', B: '', C: '', D: 'GESAMT:', E: Math.round(gesamtUmsatz * 100) / 100 });\nexcelRows.push({ A: '', B: '', C: '', D: '', E: '' });\n\n// TEIL 2: Einzelbestellungen\nexcelRows.push({\n  A: 'EINZELBESTELLUNGEN',\n  B: '',\n  C: '',\n  D: '',\n  E: ''\n});\n\nalleBestellungen.forEach(best => {\n  excelRows.push({\n    A: '👤 ' + (best.userName || 'Unbekannt'),\n    B: 'Chat: ' + best.chatId,\n    C: '',\n    D: 'Summe:',\n    E: best.gesamtpreis\n  });\n  (best.positionen || []).forEach(pos => {\n    excelRows.push({\n      A: '  ' + pos.name,\n      B: pos.einheit,\n      C: pos.preis,\n      D: pos.menge,\n      E: pos.summe || (pos.menge * pos.preis)\n    });\n  });\n  excelRows.push({ A: '', B: '', C: '', D: '', E: '' });\n});\n\nreturn [{ json: {\n  leer: false,\n  rows: excelRows,\n  datum: datum,\n  anzahlBestellungen: alleBestellungen.length,\n  gesamtUmsatz: Math.round(gesamtUmsatz * 100) / 100\n}}];"
+        "jsCode": "// Bestellfenster schließen und Daten aus gemeinsamer Datei sammeln\nconst fs = require('fs');\nconst SHARED = '/tmp/yauno_data.json';\nlet shared = {};\ntry { shared = JSON.parse(fs.readFileSync(SHARED, 'utf8')); } catch(e) {}\nshared.bestellung_aktiv = false;\nfs.writeFileSync(SHARED, JSON.stringify(shared, null, 2));\n\nconst bestellungen = shared.bestellungen || {};\nconst artikel = shared.artikel || [];\nconst datum = shared.angebot_datum || '';\n\nconst alleBestellungen = Object.values(bestellungen);\n\nif (alleBestellungen.length === 0) {\n  return [{ json: { \n    leer: true, \n    message: 'Keine Bestellungen eingegangen',\n    datum: datum\n  }}];\n}\n\n// Zusammenfassung erstellen\nlet artikelSummen = {};\nlet gesamtUmsatz = 0;\n\nalleBestellungen.forEach(best => {\n  (best.positionen || []).forEach(pos => {\n    const key = pos.artikelId || pos.name;\n    if (!artikelSummen[key]) {\n      artikelSummen[key] = {\n        name: pos.name,\n        einheit: pos.einheit,\n        preis: pos.preis,\n        gesamtMenge: 0,\n        gesamtSumme: 0\n      };\n    }\n    artikelSummen[key].gesamtMenge += pos.menge;\n    artikelSummen[key].gesamtSumme += pos.summe || (pos.menge * pos.preis);\n  });\n  gesamtUmsatz += best.gesamtpreis || 0;\n});\n\n// Daten für Excel vorbereiten\nconst excelRows = [];\n\n// Header\nexcelRows.push({\n  A: 'Yauno Bestellauswertung',\n  B: '',\n  C: '',\n  D: '',\n  E: ''\n});\nexcelRows.push({\n  A: 'Lieferdatum: ' + datum,\n  B: '',\n  C: 'Erstellt: ' + new Date().toLocaleString('de-DE'),\n  D: '',\n  E: ''\n});\nexcelRows.push({ A: '', B: '', C: '', D: '', E: '' });\n\n// TEIL 1: Artikel-Zusammenfassung\nexcelRows.push({\n  A: 'ARTIKELÜBERSICHT',\n  B: '',\n  C: '',\n  D: '',\n  E: ''\n});\nexcelRows.push({\n  A: 'Artikel',\n  B: 'Einheit',\n  C: 'Einzelpreis',\n  D: 'Gesamt Menge',\n  E: 'Gesamt Summe'\n});\n\nObject.values(artikelSummen)\n  .sort((a, b) => a.name.localeCompare(b.name))\n  .forEach(art => {\n    excelRows.push({\n      A: art.name,\n      B: art.einheit,\n      C: art.preis,\n      D: art.gesamtMenge,\n      E: Math.round(art.gesamtSumme * 100) / 100\n    });\n  });\n\nexcelRows.push({ A: '', B: '', C: '', D: 'GESAMT:', E: Math.round(gesamtUmsatz * 100) / 100 });\nexcelRows.push({ A: '', B: '', C: '', D: '', E: '' });\n\n// TEIL 2: Einzelbestellungen\nexcelRows.push({\n  A: 'EINZELBESTELLUNGEN',\n  B: '',\n  C: '',\n  D: '',\n  E: ''\n});\n\nalleBestellungen.forEach(best => {\n  excelRows.push({\n    A: '👤 ' + (best.userName || 'Unbekannt'),\n    B: 'Chat: ' + best.chatId,\n    C: '',\n    D: 'Summe:',\n    E: best.gesamtpreis\n  });\n  (best.positionen || []).forEach(pos => {\n    excelRows.push({\n      A: '  ' + pos.name,\n      B: pos.einheit,\n      C: pos.preis,\n      D: pos.menge,\n      E: pos.summe || (pos.menge * pos.preis)\n    });\n  });\n  excelRows.push({ A: '', B: '', C: '', D: '', E: '' });\n});\n\nreturn [{ json: {\n  leer: false,\n  rows: excelRows,\n  datum: datum,\n  anzahlBestellungen: alleBestellungen.length,\n  gesamtUmsatz: Math.round(gesamtUmsatz * 100) / 100\n}}];"
       },
       "id": "prepare-summary",
       "name": "Auswertung vorbereiten",
@@ -76,7 +76,7 @@
     },
     {
       "parameters": {
-        "chatId": "ADMIN_CHAT_ID_HIER",
+        "chatId": "1121266642",
         "text": "=📊 *Bestellschluss – Auswertung*\n\n📅 Lieferdatum: {{ $('Auswertung vorbereiten').item.json.datum }}\n🛒 {{ $('Auswertung vorbereiten').item.json.anzahlBestellungen }} Bestellungen\n💰 Gesamt: €{{ $('Auswertung vorbereiten').item.json.gesamtUmsatz.toFixed(2).replace('.', ',') }}\n\n📎 Excel-Auswertung siehe Anhang ⬇️",
         "additionalFields": {
           "parse_mode": "Markdown"
@@ -97,7 +97,7 @@
     {
       "parameters": {
         "operation": "sendDocument",
-        "chatId": "ADMIN_CHAT_ID_HIER",
+        "chatId": "1121266642",
         "binaryData": true,
         "binaryPropertyName": "data",
         "additionalFields": {
@@ -118,7 +118,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Tokens und Bestellungen zurücksetzen\nconst staticData = $getWorkflowStaticData('global');\nstaticData.bestellungen = {};\nstaticData.tokens = {};\nstaticData.bestellung_aktiv = false;\n// Artikel und Käufer bleiben erhalten\nreturn [{ json: { cleaned: true } }];"
+        "jsCode": "// Tokens und Bestellungen zurücksetzen (gemeinsame Datei)\nconst fs = require('fs');\nconst SHARED = '/tmp/yauno_data.json';\nlet shared = {};\ntry { shared = JSON.parse(fs.readFileSync(SHARED, 'utf8')); } catch(e) {}\nshared.bestellungen = {};\nshared.tokens = {};\nshared.bestellung_aktiv = false;\n// Artikel und Käufer bleiben erhalten\nfs.writeFileSync(SHARED, JSON.stringify(shared, null, 2));\nreturn [{ json: { cleaned: true } }];"
       },
       "id": "cleanup",
       "name": "Aufräumen",
@@ -128,7 +128,7 @@
     },
     {
       "parameters": {
-        "chatId": "ADMIN_CHAT_ID_HIER",
+        "chatId": "1121266642",
         "text": "📭 Bestellschluss – Keine Bestellungen diese Woche eingegangen.",
         "additionalFields": {}
       },
