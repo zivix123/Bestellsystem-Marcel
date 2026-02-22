@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "={{$parameter.httpMethod}}",
+        "httpMethod": "POST",
         "path": "bestellung",
         "responseMode": "responseNode",
         "options": {
@@ -20,64 +20,13 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {},
-          "combinator": "and",
-          "conditions": [
-            {
-              "leftValue": "={{ $json.headers['method'] || $json.method || 'POST' }}",
-              "rightValue": "GET",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ]
-        }
-      },
-      "id": "check-method",
-      "name": "GET oder POST?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [420, 300]
-    },
-    {
-      "parameters": {
-        "jsCode": "// GET: Bestellung per Token laden (Bearbeiten-Modus)\nconst query = $input.first().json.query || {};\nconst token = query.token;\n\nif (!token) {\n  return [{ json: { error: 'Token fehlt', status: 400 } }];\n}\n\nconst staticData = $getWorkflowStaticData('global');\nconst tokens = staticData.tokens || {};\nconst chatId = tokens[token];\n\nif (!chatId) {\n  return [{ json: { error: 'Ungültiger Token', status: 404 } }];\n}\n\nconst bestellungen = staticData.bestellungen || {};\nconst bestellung = bestellungen[chatId];\n\nif (!bestellung) {\n  return [{ json: { error: 'Bestellung nicht gefunden', status: 404 } }];\n}\n\nreturn [{ json: { ...bestellung, status: 200 } }];"
-      },
-      "id": "load-order",
-      "name": "Bestellung laden (GET)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [640, 200]
-    },
-    {
-      "parameters": {
         "jsCode": "// POST: Bestellung speichern\nconst body = $input.first().json.body || $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\n\n// Prüfe ob Bestellung aktiv\nif (staticData.bestellung_aktiv === false) {\n  return [{ json: { error: 'Bestellfenster geschlossen', status: 403 } }];\n}\n\nconst chatId = body.chatId;\nif (!chatId) {\n  return [{ json: { error: 'Chat-ID fehlt', status: 400 } }];\n}\n\n// Token generieren oder bestehenden verwenden\nlet token = body.token;\nconst bestellungen = staticData.bestellungen || {};\nconst tokens = staticData.tokens || {};\n\nif (!token || !tokens[token]) {\n  // Neuen Token generieren\n  token = 'ord_' + Math.random().toString(36).substr(2, 12) + Date.now().toString(36);\n}\n\n// Bestellung speichern\nbestellungen[chatId] = {\n  chatId: chatId,\n  userName: body.userName || 'Unbekannt',\n  positionen: body.positionen || [],\n  gesamtpreis: body.gesamtpreis || 0,\n  token: token,\n  zeitpunkt: body.zeitpunkt || new Date().toISOString(),\n  aktualisiert: new Date().toISOString()\n};\n\ntokens[token] = chatId;\n\n// Käufer registrieren (wenn noch nicht vorhanden)\nconst kaeufer = staticData.kaeufer || [];\nif (!kaeufer.includes(String(chatId))) {\n  kaeufer.push(String(chatId));\n}\n\nstaticData.bestellungen = bestellungen;\nstaticData.tokens = tokens;\nstaticData.kaeufer = kaeufer;\n\nconst isUpdate = !!body.token;\n\n// Prüfe auf ungewöhnlich hohe Mengen (>50 Einheiten)\nconst highQtyItems = (body.positionen || []).filter(p => p.menge > 50);\n\nreturn [{ json: {\n  success: true,\n  token: token,\n  chatId: String(chatId),\n  userName: body.userName,\n  gesamtpreis: body.gesamtpreis,\n  isUpdate: isUpdate,\n  highQtyWarning: highQtyItems.length > 0,\n  highQtyItems: highQtyItems.map(p => p.name + ' (' + p.menge + 'x)').join(', '),\n  status: 200\n}}];"
       },
       "id": "save-order",
-      "name": "Bestellung speichern (POST)",
+      "name": "Bestellung speichern",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [640, 400]
-    },
-    {
-      "parameters": {
-        "options": {
-          "responseCode": "={{ $json.status || 200 }}",
-          "responseHeaders": {
-            "entries": [
-              { "name": "Access-Control-Allow-Origin", "value": "*" },
-              { "name": "Content-Type", "value": "application/json" }
-            ]
-          }
-        }
-      },
-      "id": "respond-get",
-      "name": "Respond GET",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [860, 200]
+      "position": [420, 300]
     },
     {
       "parameters": {
@@ -100,7 +49,7 @@
       "name": "Erfolgreich?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [860, 400]
+      "position": [640, 300]
     },
     {
       "parameters": {
@@ -115,10 +64,10 @@
         }
       },
       "id": "respond-post",
-      "name": "Respond POST",
+      "name": "Respond OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1080, 320]
+      "position": [860, 220]
     },
     {
       "parameters": {
@@ -149,7 +98,7 @@
       "name": "Bestätigung an Käufer",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1080, 480],
+      "position": [860, 400],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -169,7 +118,7 @@
       "name": "Admin benachrichtigen",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1300, 480],
+      "position": [1080, 400],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -193,7 +142,7 @@
       "name": "Respond Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1080, 560]
+      "position": [860, 480]
     },
     {
       "parameters": {
@@ -216,7 +165,7 @@
       "name": "Hohe Menge?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1520, 480]
+      "position": [1300, 400]
     },
     {
       "parameters": {
@@ -230,7 +179,7 @@
       "name": "Mengenwarnung an Admin",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1740, 420],
+      "position": [1520, 340],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -241,24 +190,15 @@
   ],
   "connections": {
     "Webhook Bestellung": {
-      "main": [[{ "node": "GET oder POST?", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Bestellung speichern", "type": "main", "index": 0 }]]
     },
-    "GET oder POST?": {
-      "main": [
-        [{ "node": "Bestellung laden (GET)", "type": "main", "index": 0 }],
-        [{ "node": "Bestellung speichern (POST)", "type": "main", "index": 0 }]
-      ]
-    },
-    "Bestellung laden (GET)": {
-      "main": [[{ "node": "Respond GET", "type": "main", "index": 0 }]]
-    },
-    "Bestellung speichern (POST)": {
+    "Bestellung speichern": {
       "main": [[{ "node": "Erfolgreich?", "type": "main", "index": 0 }]]
     },
     "Erfolgreich?": {
       "main": [
         [
-          { "node": "Respond POST", "type": "main", "index": 0 },
+          { "node": "Respond OK", "type": "main", "index": 0 },
           { "node": "Bestätigung an Käufer", "type": "main", "index": 0 }
         ],
         [{ "node": "Respond Error", "type": "main", "index": 0 }]

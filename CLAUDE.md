@@ -12,9 +12,10 @@ Du arbeitest am **Yauno Lebensmittel Bestellsystem** – einem vollautomatischen
 [Admin] Excel hochladen → Telegram Bot
     → n8n Workflow 01: Artikel parsen + Käufer benachrichtigen
     → Käufer öffnen Telegram Mini WebApp (index.html auf Netlify)
-    → n8n Workflow 03: Bestellung speichern + Token generieren
+    → n8n Workflow 02: GET /webhook/artikel → Artikelliste
+    → n8n Workflow 03: POST /webhook/bestellung → Bestellung speichern + Token
     → Käufer erhalten Bearbeitungslink per Telegram
-    → n8n Workflow 05: Bestellung per Token laden (Bearbeiten-Modus)
+    → n8n Workflow 05: GET /webhook/bestellung-get?token= → Bestellung laden
     → Mittwoch 20:00 Uhr: Workflow 04 (Cron) → Excel-Auswertung an Admin
 ```
 
@@ -27,11 +28,12 @@ Du arbeitest am **Yauno Lebensmittel Bestellsystem** – einem vollautomatischen
 ├── workflows/
 │   ├── workflow_01_excel_import.json       # Telegram Trigger, Excel parsen, Käufer notify
 │   ├── workflow_02_artikel_api.json        # GET /webhook/artikel → Artikelliste
-│   ├── workflow_03_bestellung_v2.json      # POST /webhook/bestellung → Token generieren
+│   ├── workflow_03_bestellung_v2.json      # POST /webhook/bestellung → Bestellung speichern
 │   ├── workflow_04_abschluss.json          # Cron Mi 20:00 → Bestellschluss + Excel
-│   └── workflow_05_get_order.json          # GET /webhook/bestellung?token= → Bestellung laden
+│   └── workflow_05_get_order.json          # GET /webhook/bestellung-get?token= → Bestellung laden
 ├── webapp/
 │   └── index.html                          # Telegram Mini WebApp (Vanilla JS)
+├── README.md                               # Setup-Anleitung
 └── CLAUDE.md                               # Diese Datei
 ```
 
@@ -48,9 +50,21 @@ Admin Chat ID:  1121266642
 
 ---
 
+## Webhook-Endpunkte
+
+| Workflow | Methode | Pfad (webhookId)       | Beschreibung                    |
+|----------|---------|------------------------|---------------------------------|
+| 01       | —       | Telegram Trigger       | Excel-Datei vom Admin empfangen |
+| 02       | GET     | /webhook/artikel       | Artikelliste für WebApp         |
+| 03       | POST    | /webhook/bestellung    | Bestellung speichern            |
+| 04       | —       | Cron (Mi 20:00)        | Bestellschluss + Auswertung     |
+| 05       | GET     | /webhook/bestellung-get| Bestellung per Token laden      |
+
+---
+
 ## n8n Datenstruktur (Static Data)
 
-Die Workflows kommunizieren über `$execution.workflow.staticData`:
+Die Workflows kommunizieren über `$getWorkflowStaticData('global')`:
 
 ```javascript
 {
@@ -62,6 +76,10 @@ Die Workflows kommunizieren über `$execution.workflow.staticData`:
   angebot_datum: "18.02.26"                              // Lieferdatum
 }
 ```
+
+**Wichtig:** Jeder Workflow hat seine eigene Static Data. Damit die Workflows
+Daten teilen können, müssen alle im selben n8n-Projekt laufen – oder eine
+externe JSON-Datei als gemeinsamen Speicher nutzen.
 
 ---
 
@@ -80,7 +98,30 @@ Zeile 9+:   Datenzeilen:
 Sonderzeilen:
   "Tagesangebote:" → Kategorie wechselt zu "Tagesangebote"
   "Gesamt zu zahlen:" → Dateiende
+
+Wenn keine "Tagesangebote:"-Zeile vorhanden ist, werden alle Artikel
+als Kategorie "Allgemein" eingeordnet.
 ```
+
+---
+
+## WebApp Konfiguration
+
+In `webapp/index.html` oben die Webhook-URLs eintragen:
+
+```javascript
+const WEBHOOK_ARTIKEL        = 'http://46.225.80.178:5678/webhook/artikel';
+const WEBHOOK_BESTELLUNG     = 'http://46.225.80.178:5678/webhook/bestellung';
+const WEBHOOK_BESTELLUNG_GET = 'http://46.225.80.178:5678/webhook/bestellung-get';
+```
+
+**Features:**
+- Artikelliste mit Suche und Kategorie-Filter
+- Mengen-Eingabe mit +/- Buttons
+- Bestellübersicht im Footer
+- Edit-Modus: `?token=xxx` in der URL → grüner BEARBEITEN-Banner
+- Demo-Modus: Automatische Beispieldaten wenn Server nicht erreichbar
+- Offline-Modus: Banner wenn Bestellfenster geschlossen
 
 ---
 
@@ -92,15 +133,9 @@ Sonderzeilen:
    ```
    Dann in n8n: Settings → Webhook URL → Cloudflare-URL eintragen
 
-2. **Umgebungsvariablen** – n8n Free Plan hat keine Variables.
-   Stattdessen `$env.ADMIN_CHAT_ID` und `$env.WEBAPP_URL` direkt in den Nodes durch echte Werte ersetzen.
-
-3. **WebApp Webhook-URLs** – in `index.html` oben eintragen:
-   ```javascript
-   const WEBHOOK_ARTIKEL         = 'http://46.225.80.178:5678/webhook/artikel';
-   const WEBHOOK_BESTELLUNG      = 'http://46.225.80.178:5678/webhook/bestellung';
-   const WEBHOOK_BESTELLUNG_GET  = 'http://46.225.80.178:5678/webhook/bestellung';
-   ```
+2. **Static Data Isolation** – Jeder n8n Workflow hat seine eigene Static Data.
+   Workflow 02 und 05 können nicht direkt auf die Daten von Workflow 01/03 zugreifen.
+   Lösung: Alle Workflows im selben Projekt halten, oder externe JSON-Datei nutzen.
 
 ---
 
@@ -143,46 +178,34 @@ In n8n: **Settings → API → Create API Key** → Key in `.mcp.json` eintragen
 
 ### Workflow debuggen
 ```
-Schau dir die letzten Executions von Workflow 01 an und erkläre warum der 
+Schau dir die letzten Executions von Workflow 01 an und erkläre warum der
 Telegram Trigger fehlschlägt.
-```
-
-### Webhook-URLs eintragen
-```
-Ersetze in allen 5 Workflow-JSONs alle Vorkommen von $env.ADMIN_CHAT_ID 
-durch "123456789" und $env.WEBAPP_URL durch 
-"https://jade-alfajores-4f3440.netlify.app"
 ```
 
 ### WebApp updaten
 ```
-In webapp/index.html: Trage die korrekten n8n Webhook-URLs ein und 
-stelle sicher dass der Edit-Modus korrekt funktioniert wenn ?token= 
+In webapp/index.html: Trage die korrekten n8n Webhook-URLs ein und
+stelle sicher dass der Edit-Modus korrekt funktioniert wenn ?token=
 in der URL steht.
 ```
 
 ### Neues Feature
 ```
-Füge in Workflow 03 eine Validierung hinzu: Wenn ein Käufer mehr als 
-50 Einheiten eines einzelnen Artikels bestellt, soll eine Warnung 
+Füge in Workflow 03 eine Validierung hinzu: Wenn ein Käufer mehr als
+50 Einheiten eines einzelnen Artikels bestellt, soll eine Warnung
 per Telegram an den Admin gesendet werden.
 ```
 
 ### Excel-Parser verbessern
 ```
-Der Excel-Parser in Workflow 01 (Code-Node "Artikel extrahieren") 
-soll auch mit Dateien umgehen können wo die Tagesangebote-Zeile 
+Der Excel-Parser in Workflow 01 (Code-Node "Artikel extrahieren")
+soll auch mit Dateien umgehen können wo die Tagesangebote-Zeile
 fehlt – dann alle Artikel als Kategorie "Allgemein" einordnen.
 ```
 
 ---
 
 ## Wichtige Hinweise
-
-- **Static Data Scope**: Jeder n8n Workflow hat seine eigene Static Data.
-  Wenn Workflow 02 auf die Artikel von Workflow 01 zugreifen soll,
-  müssen alle 5 Workflows im selben n8n-Projekt sein – oder du nutzt
-  eine externe JSON-Datei als gemeinsamen Speicher.
 
 - **Token-Logik**: Token wird beim ersten Bestellen generiert und bleibt
   die ganze Woche erhalten. Bei Änderungen wird der gleiche Token wiederverwendet.
@@ -193,3 +216,10 @@ fehlt – dann alle Artikel als Kategorie "Allgemein" einordnen.
 
 - **Bearbeiten-Modus**: WebApp erkennt `?token=xxx` in der URL und lädt
   die gespeicherte Bestellung → grüner BEARBEITEN-Banner erscheint.
+
+- **Mengenwarnung**: Workflow 03 prüft ob ein Käufer mehr als 50 Einheiten
+  eines Artikels bestellt und sendet eine Warnung an den Admin.
+
+- **Käufer-Registrierung**: Käufer werden automatisch bei der ersten
+  Bestellung in der `kaeufer`-Liste registriert und bei neuen Angeboten
+  per Telegram benachrichtigt.
