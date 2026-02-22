@@ -10,7 +10,7 @@
 #   ./import_workflows.sh
 # ============================================
 
-N8N_URL="https://tracker-rubber-animation-accommodations.trycloudflare.com"
+N8N_URL="https://beginner-specialists-mac-helmet.trycloudflare.com"
 API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNDFlYjNkYi1mOGRkLTRhZmEtODEzZS1lYzRmNTBhZGZmN2MiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzgwYTE0YzItNmYyYi00MjI4LTgzN2YtYTdhMDc1MjI5NTM1IiwiaWF0IjoxNzcxNzUyOTg0LCJleHAiOjE3NzQzMDY4MDB9.7zyzXBWexrzZGy7Mj7eLwwbN6fuNBqck4M_W5Qz4FSo"
 
 # Farben
@@ -75,7 +75,7 @@ if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
   echo "=========================================="
   echo ""
   echo "Nächste Schritte:"
-  echo "  1. Öffne n8n: https://tracker-rubber-animation-accommodations.trycloudflare.com"
+  echo "  1. Öffne n8n: https://beginner-specialists-mac-helmet.trycloudflare.com"
   echo "  2. Öffne den Workflow 'Yauno Bestellsystem'"
   echo "  3. Aktiviere den Workflow (Toggle oben rechts)"
   echo "  4. Stelle sicher dass 'Telegram account' Credentials existieren"
