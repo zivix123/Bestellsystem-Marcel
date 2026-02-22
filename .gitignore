@@ -3,3 +3,4 @@
 
 # Deploy-Script mit API-Key nicht committen
 deploy_to_n8n.ps1
+.wf_id
