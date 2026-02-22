@@ -56,7 +56,20 @@ EXISTING=$(curl -s \
   -H "X-N8N-API-KEY: $API_KEY" \
   "$N8N_URL/api/v1/workflows" 2>/dev/null)
 
-WF_ID=$(echo "$EXISTING" | grep -o "\"id\":\"[^\"]*\",\"name\":\"$WF_NAME\"" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+# Robust JSON parsing mit python3
+WF_ID=$(echo "$EXISTING" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    workflows = data.get('data', data) if isinstance(data, dict) else data
+    if isinstance(workflows, dict):
+        workflows = workflows.get('data', [])
+    for wf in workflows:
+        if wf.get('name') == '$WF_NAME':
+            print(wf['id'])
+            break
+except: pass
+" 2>/dev/null)
 
 if [ -n "$WF_ID" ]; then
   echo -e "gefunden (ID: $WF_ID)"
