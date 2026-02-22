@@ -388,11 +388,12 @@
 
   <script>
     // ============================================================
-    // KONFIGURATION – Hier die echten Webhook-URLs eintragen
+    // KONFIGURATION – Nur diese eine URL anpassen!
     // ============================================================
-    const WEBHOOK_ARTIKEL        = 'https://univ-province-validity-jimmy.trycloudflare.com/webhook/artikel';
-    const WEBHOOK_BESTELLUNG     = 'https://univ-province-validity-jimmy.trycloudflare.com/webhook/bestellung';
-    const WEBHOOK_BESTELLUNG_GET = 'https://univ-province-validity-jimmy.trycloudflare.com/webhook/bestellung-get';
+    const N8N_BASE_URL           = 'https://univ-province-validity-jimmy.trycloudflare.com';
+    const WEBHOOK_ARTIKEL        = N8N_BASE_URL + '/webhook/artikel';
+    const WEBHOOK_BESTELLUNG     = N8N_BASE_URL + '/webhook/bestellung';
+    const WEBHOOK_BESTELLUNG_GET = N8N_BASE_URL + '/webhook/bestellung-get';
 
     // ============================================================
     // STATE

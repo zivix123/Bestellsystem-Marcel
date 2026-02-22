@@ -42,12 +42,11 @@ Die Datei `webapp/index.html` auf Netlify deployen:
 2. `webapp/` Ordner hochladen
 3. URL notieren (z.B. `https://jade-alfajores-4f3440.netlify.app`)
 
-**Webhook-URLs anpassen** (in index.html, Zeilen 1-3 im Script):
+**Base-URL anpassen** (in index.html, nur diese eine Zeile ändern):
 ```javascript
-const WEBHOOK_ARTIKEL        = 'https://DEINE-CLOUDFLARE-URL/webhook/artikel';
-const WEBHOOK_BESTELLUNG     = 'https://DEINE-CLOUDFLARE-URL/webhook/bestellung';
-const WEBHOOK_BESTELLUNG_GET = 'https://DEINE-CLOUDFLARE-URL/webhook/bestellung';
+const N8N_BASE_URL = 'https://DEINE-CLOUDFLARE-URL';
 ```
+Die drei Webhook-URLs werden automatisch daraus abgeleitet.
 
 ---
 
@@ -64,10 +63,11 @@ chmod +x cloudflared
 ./cloudflared tunnel --url http://localhost:5678
 ```
 
-Die generierte `https://xxx.trycloudflare.com` URL dann:
-- In n8n: Settings → Webhook URL eintragen
-- In `webapp/index.html`: Webhook-URLs aktualisieren
-- Bei @BotFather: Webhook setzen
+Die generierte `https://xxx.trycloudflare.com` URL dann an **2 Stellen** eintragen:
+1. **n8n Umgebungsvariable** `N8N_BASE_URL` setzen (z.B. in Docker: `-e N8N_BASE_URL=https://xxx.trycloudflare.com`)
+2. **WebApp** `webapp/index.html` → `N8N_BASE_URL` anpassen
+
+Die Workflows lesen die URL automatisch aus `$env.N8N_BASE_URL`.
 
 ---
 

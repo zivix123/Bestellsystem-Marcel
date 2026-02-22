@@ -48,6 +48,14 @@ Telegram Bot:   Credential "Telegram account" in n8n
 Admin Chat ID:  1121266642
 ```
 
+**n8n Base-URL zentral verwaltet (Umgebungsvariable):**
+Die Workflows 02, 04 und 05 lesen die n8n-URL aus der Umgebungsvariable `N8N_BASE_URL`.
+Beim Docker-Start setzen:
+```bash
+docker run -e N8N_BASE_URL=https://univ-province-validity-jimmy.trycloudflare.com ...
+```
+Wenn sich die Cloudflare-Tunnel-URL ändert, muss nur diese eine Variable angepasst werden.
+
 **WebApp-URL zentral verwaltet:**
 Die WebApp-URL wird über `staticData.webapp_url` in der globalen Static Data gepflegt.
 Workflows 01 und 03 lesen die URL aus der Static Data und geben sie an die Telegram-Buttons weiter.
@@ -120,12 +128,10 @@ als Kategorie "Allgemein" eingeordnet.
 
 ## WebApp Konfiguration
 
-In `webapp/index.html` oben die Webhook-URLs eintragen:
+In `webapp/index.html` nur die Base-URL anpassen – die Webhook-Pfade werden automatisch abgeleitet:
 
 ```javascript
-const WEBHOOK_ARTIKEL        = 'https://univ-province-validity-jimmy.trycloudflare.com/webhook/artikel';
-const WEBHOOK_BESTELLUNG     = 'https://univ-province-validity-jimmy.trycloudflare.com/webhook/bestellung';
-const WEBHOOK_BESTELLUNG_GET = 'https://univ-province-validity-jimmy.trycloudflare.com/webhook/bestellung-get';
+const N8N_BASE_URL = 'https://univ-province-validity-jimmy.trycloudflare.com';
 ```
 
 **Features:**
@@ -142,14 +148,15 @@ const WEBHOOK_BESTELLUNG_GET = 'https://univ-province-validity-jimmy.trycloudfla
 
 1. **HTTPS für Telegram Webhook fehlt** – n8n läuft auf HTTP. Lösung: Cloudflare Tunnel
    ```bash
-   cloudflared tunnel --url https://univ-province-validity-jimmy.trycloudflare.com
+   cloudflared tunnel --url http://localhost:5678
    ```
-   Dann in n8n: Settings → Webhook URL → Cloudflare-URL eintragen
+   Dann die generierte URL als `N8N_BASE_URL` Umgebungsvariable setzen und in
+   `webapp/index.html` als `N8N_BASE_URL` eintragen.
 
 2. **Static Data Isolation** – ~~Gelöst!~~ Workflows 01 und 03 bieten jetzt interne
    Admin-Webhooks an (`/webhook/admin-artikel`, `/webhook/admin-bestellungen`,
    `/webhook/admin-close`). Die Consumer-Workflows (02, 04, 05) rufen diese
-   per HTTP Request auf `https://univ-province-validity-jimmy.trycloudflare.com` ab.
+   per HTTP Request über `$env.N8N_BASE_URL` ab.
 
 ---
 
