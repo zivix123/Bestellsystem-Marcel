@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Yauno Bestellsystem</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&display=swap');
+
+    :root {
+      --bg: #f4f1eb;
+      --card: #ffffff;
+      --accent: #2d6a4f;
+      --accent-light: #52b788;
+      --accent-bg: #d8f3dc;
+      --text: #1b1b1b;
+      --text-muted: #6c757d;
+      --border: #dee2e6;
+      --danger: #e63946;
+      --warning: #f4a261;
+      --radius: 14px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 140px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* === HEADER === */
+    .header {
+      background: var(--accent);
+      color: white;
+      padding: 20px 16px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .header .subtitle {
+      font-size: 13px;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+    .header .status-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      margin-top: 8px;
+      font-weight: 500;
+    }
+
+    /* === EDIT BANNER === */
+    .edit-banner {
+      display: none;
+      background: var(--accent-light);
+      color: white;
+      text-align: center;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .edit-banner.active { display: block; }
+
+    /* === OFFLINE BANNER === */
+    .offline-banner {
+      display: none;
+      background: var(--danger);
+      color: white;
+      text-align: center;
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .offline-banner.active { display: block; }
+
+    /* === SEARCH === */
+    .search-wrap {
+      padding: 12px 16px;
+      position: sticky;
+      top: 80px;
+      z-index: 90;
+      background: var(--bg);
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 12px 16px 12px 42px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-family: inherit;
+      background: var(--card);
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .search-wrap input:focus {
+      border-color: var(--accent);
+    }
+    .search-wrap .icon {
+      position: absolute;
+      left: 30px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 16px;
+    }
+
+    /* === CATEGORY TABS === */
+    .category-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 0 16px 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .category-tabs::-webkit-scrollbar { display: none; }
+    .cat-tab {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      color: var(--text-muted);
+    }
+    .cat-tab.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    /* === ARTICLE CARDS === */
+    .articles-container { padding: 0 16px; }
+
+    .category-heading {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 20px 0 10px;
+      padding-left: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .article-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: transform 0.15s;
+    }
+    .article-card.has-qty {
+      border-left: 4px solid var(--accent);
+    }
+
+    .article-info { flex: 1; min-width: 0; }
+    .article-name {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .article-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .article-price {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    /* === QUANTITY CONTROLS === */
+    .qty-controls {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .qty-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--card);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .qty-btn:active {
+      transform: scale(0.9);
+    }
+    .qty-btn.minus { color: var(--danger); border-color: var(--danger); }
+    .qty-btn.plus { color: var(--accent); border-color: var(--accent); }
+
+    .qty-input {
+      width: 44px;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      color: var(--text);
+      outline: none;
+    }
+    .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    /* === FOOTER BAR === */
+    .footer-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      z-index: 200;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    }
+    .footer-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .footer-total {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .footer-items {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .btn-order {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--accent);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+    .btn-order:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+    .btn-order:not(:disabled):active {
+      transform: scale(0.98);
+      background: #1b4332;
+    }
+
+    /* === LOADING === */
+    .loading-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 60vh;
+      gap: 16px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* === TOAST === */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: var(--accent);
+      color: white;
+      padding: 12px 24px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 999;
+      transition: transform 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .toast.error { background: var(--danger); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* === EMPTY STATE === */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; line-height: 1.5; }
+
+    /* === ANGEBOT HINWEIS === */
+    .note-card {
+      background: var(--accent-bg);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin: 0 16px 12px;
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1>🥬 Yauno Bestellung</h1>
+    <div class="subtitle" id="deliveryDate">Angebot wird geladen...</div>
+    <span class="status-badge" id="statusBadge">Lädt...</span>
+  </div>
+
+  <!-- EDIT BANNER -->
+  <div class="edit-banner" id="editBanner">✏️ BEARBEITEN-MODUS – Ändere deine Bestellung</div>
+
+  <!-- OFFLINE BANNER -->
+  <div class="offline-banner" id="offlineBanner">⏰ Bestellfenster geschlossen – Keine Bestellungen möglich</div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- MAIN CONTENT -->
+  <div id="mainContent">
+    <div class="loading-screen" id="loadingScreen">
+      <div class="spinner"></div>
+      <div style="color:var(--text-muted); font-size:14px;">Angebot wird geladen...</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer-bar" id="footerBar" style="display:none;">
+    <div class="footer-summary">
+      <div>
+        <span class="footer-items" id="footerItems">0 Artikel</span>
+      </div>
+      <div class="footer-total" id="footerTotal">€0,00</div>
+    </div>
+    <button class="btn-order" id="btnOrder" disabled>Bestellung absenden</button>
+  </div>
+
+  <script>
+    // ============================================================
+    // KONFIGURATION – Hier die echten Webhook-URLs eintragen
+    // ============================================================
+    const WEBHOOK_ARTIKEL        = 'http://46.225.80.178:5678/webhook/artikel';
+    const WEBHOOK_BESTELLUNG     = 'http://46.225.80.178:5678/webhook/bestellung';
+    const WEBHOOK_BESTELLUNG_GET = 'http://46.225.80.178:5678/webhook/bestellung';
+
+    // ============================================================
+    // STATE
+    // ============================================================
+    let artikel = [];
+    let mengen = {};       // { artikelId: menge }
+    let editToken = null;
+    let isOffline = false;
+    let isDemoMode = false;
+
+    // Telegram WebApp
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      tg.setHeaderColor('#2d6a4f');
+      tg.setBackgroundColor('#f4f1eb');
+    }
+
+    const chatId = tg?.initDataUnsafe?.user?.id || null;
+    const userName = tg?.initDataUnsafe?.user?.first_name || 'Gast';
+
+    // Check for edit token in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    editToken = urlParams.get('token') || null;
+
+    // ============================================================
+    // DEMO DATA (Fallback wenn Server nicht erreichbar)
+    // ============================================================
+    const DEMO_ARTIKEL = [
+      { id: 1, name: "Bio-Tomaten", einheit: "ca 1kg", preis: 4.50, kategorie: "Gemüse" },
+      { id: 2, name: "Gurke", einheit: "Stück", preis: 1.20, kategorie: "Gemüse" },
+      { id: 3, name: "Paprika Mix", einheit: "500g", preis: 3.80, kategorie: "Gemüse" },
+      { id: 4, name: "Karotten", einheit: "1kg Bund", preis: 2.50, kategorie: "Gemüse" },
+      { id: 5, name: "Äpfel Elstar", einheit: "ca 1kg", preis: 3.20, kategorie: "Obst" },
+      { id: 6, name: "Bananen", einheit: "ca 1kg", preis: 2.80, kategorie: "Obst" },
+      { id: 7, name: "Bio-Vollmilch", einheit: "1L", preis: 1.90, kategorie: "Milchprodukte" },
+      { id: 8, name: "Bergkäse", einheit: "ca 200g", preis: 5.60, kategorie: "Milchprodukte" },
+      { id: 9, name: "Frisches Baguette", einheit: "Stück", preis: 2.40, kategorie: "Tagesangebote" },
+      { id: 10, name: "Hummus Classic", einheit: "200g", preis: 3.50, kategorie: "Tagesangebote" },
+    ];
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    init();
+
+    async function init() {
+      try {
+        // 1) Artikel laden
+        const res = await fetch(WEBHOOK_ARTIKEL, { method: 'GET' });
+        if (!res.ok) throw new Error('Server-Fehler');
+        const data = await res.json();
+
+        if (data.bestellung_aktiv === false) {
+          isOffline = true;
+        }
+
+        artikel = data.artikel || [];
+        const datum = data.angebot_datum || '';
+        document.getElementById('deliveryDate').textContent = datum
+          ? `Lieferung: ${datum}` : 'Aktuelles Angebot';
+
+      } catch (err) {
+        console.warn('Server nicht erreichbar, verwende Demo-Daten:', err);
+        isDemoMode = true;
+        artikel = DEMO_ARTIKEL;
+      }
+
+      // 2) Edit-Modus? Bestellung laden
+      if (editToken && !isDemoMode) {
+        try {
+          const res = await fetch(`${WEBHOOK_BESTELLUNG_GET}?token=${editToken}`, { method: 'GET' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.positionen) {
+              data.positionen.forEach(p => {
+                if (p.menge > 0) mengen[p.artikelId] = p.menge;
+              });
+            }
+            document.getElementById('editBanner').classList.add('active');
+          }
+        } catch (err) {
+          console.warn('Bestellung konnte nicht geladen werden:', err);
+        }
+      }
+
+      render();
+    }
+
+    // ============================================================
+    // RENDER
+    // ============================================================
+    function render() {
+      const main = document.getElementById('mainContent');
+
+      if (isOffline) {
+        document.getElementById('offlineBanner').classList.add('active');
+        document.getElementById('statusBadge').textContent = '🔴 Geschlossen';
+      } else {
+        document.getElementById('statusBadge').textContent = isDemoMode
+          ? '⚠️ Demo-Modus'
+          : '🟢 Bestellung offen';
+      }
+
+      if (artikel.length === 0) {
+        main.innerHTML = `
+          <div class="empty-state">
+            <div class="emoji">📦</div>
+            <p>Aktuell kein Angebot verfügbar.<br>Du wirst benachrichtigt, sobald ein neues Angebot da ist.</p>
+          </div>`;
+        return;
+      }
+
+      // Kategorien extrahieren
+      const kategorien = [...new Set(artikel.map(a => a.kategorie))];
+
+      let html = '';
+
+      // Search
+      html += `
+        <div class="search-wrap">
+          <span class="icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Artikel suchen..." oninput="filterArticles()">
+        </div>`;
+
+      // Category tabs
+      html += `<div class="category-tabs">
+        <button class="cat-tab active" data-cat="all" onclick="selectCategory('all', this)">Alle</button>`;
+      kategorien.forEach(k => {
+        html += `<button class="cat-tab" data-cat="${k}" onclick="selectCategory('${k}', this)">${k}</button>`;
+      });
+      html += '</div>';
+
+      // Note
+      if (isDemoMode) {
+        html += `<div class="note-card">⚠️ Demo-Modus – Server nicht erreichbar. Angezeigte Daten sind Beispieldaten.</div>`;
+      }
+
+      // Articles grouped by category
+      html += '<div class="articles-container" id="articlesContainer">';
+      kategorien.forEach(kat => {
+        const items = artikel.filter(a => a.kategorie === kat);
+        html += `<div class="category-group" data-category="${kat}">`;
+        html += `<div class="category-heading">${kat}</div>`;
+        items.forEach(a => {
+          const qty = mengen[a.id] || 0;
+          html += renderArticleCard(a, qty);
+        });
+        html += '</div>';
+      });
+      html += '</div>';
+
+      main.innerHTML = html;
+
+      // Footer
+      document.getElementById('footerBar').style.display = 'block';
+      updateFooter();
+    }
+
+    function renderArticleCard(a, qty) {
+      return `
+        <div class="article-card ${qty > 0 ? 'has-qty' : ''}" id="card-${a.id}">
+          <div class="article-info">
+            <div class="article-name">${a.name}</div>
+            <div class="article-meta">${a.einheit}</div>
+          </div>
+          <div class="article-price">${formatCurrency(a.preis)}</div>
+          <div class="qty-controls">
+            <button class="qty-btn minus" onclick="changeQty(${a.id}, -1)" ${qty === 0 ? 'style="visibility:hidden"' : ''}>−</button>
+            <input class="qty-input" type="number" inputmode="numeric" min="0" max="99"
+              value="${qty}" onchange="setQty(${a.id}, this.value)" id="qty-${a.id}">
+            <button class="qty-btn plus" onclick="changeQty(${a.id}, 1)">+</button>
+          </div>
+        </div>`;
+    }
+
+    // ============================================================
+    // QUANTITY LOGIC
+    // ============================================================
+    function changeQty(id, delta) {
+      if (isOffline) return showToast('Bestellfenster ist geschlossen', 'error');
+      const current = mengen[id] || 0;
+      const newQty = Math.max(0, Math.min(99, current + delta));
+      setQtyDirect(id, newQty);
+    }
+
+    function setQty(id, value) {
+      if (isOffline) return showToast('Bestellfenster ist geschlossen', 'error');
+      const qty = Math.max(0, Math.min(99, parseInt(value) || 0));
+      setQtyDirect(id, qty);
+    }
+
+    function setQtyDirect(id, qty) {
+      if (qty > 0) {
+        mengen[id] = qty;
+      } else {
+        delete mengen[id];
+      }
+
+      // Update card visually
+      const card = document.getElementById(`card-${id}`);
+      const input = document.getElementById(`qty-${id}`);
+      const minusBtn = card?.querySelector('.qty-btn.minus');
+
+      if (input) input.value = qty || 0;
+      if (card) card.classList.toggle('has-qty', qty > 0);
+      if (minusBtn) minusBtn.style.visibility = qty > 0 ? 'visible' : 'hidden';
+
+      updateFooter();
+    }
+
+    // ============================================================
+    // FOOTER UPDATE
+    // ============================================================
+    function updateFooter() {
+      let totalItems = 0;
+      let totalPrice = 0;
+
+      Object.entries(mengen).forEach(([id, qty]) => {
+        const art = artikel.find(a => a.id == id);
+        if (art && qty > 0) {
+          totalItems += qty;
+          totalPrice += qty * art.preis;
+        }
+      });
+
+      document.getElementById('footerItems').textContent =
+        totalItems === 1 ? '1 Artikel' : `${totalItems} Artikel`;
+      document.getElementById('footerTotal').textContent = formatCurrency(totalPrice);
+
+      const btn = document.getElementById('btnOrder');
+      btn.disabled = totalItems === 0 || isOffline;
+      btn.textContent = editToken
+        ? (totalItems > 0 ? 'Bestellung aktualisieren' : 'Keine Artikel gewählt')
+        : (totalItems > 0 ? 'Bestellung absenden' : 'Wähle Artikel aus');
+    }
+
+    // ============================================================
+    // BESTELLEN
+    // ============================================================
+    document.getElementById('btnOrder').addEventListener('click', submitOrder);
+
+    async function submitOrder() {
+      const btn = document.getElementById('btnOrder');
+      if (btn.disabled) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Wird gesendet...';
+
+      const positionen = Object.entries(mengen)
+        .filter(([_, qty]) => qty > 0)
+        .map(([id, menge]) => {
+          const art = artikel.find(a => a.id == id);
+          return {
+            artikelId: parseInt(id),
+            name: art.name,
+            einheit: art.einheit,
+            preis: art.preis,
+            menge: menge,
+            summe: +(menge * art.preis).toFixed(2)
+          };
+        });
+
+      const gesamtpreis = positionen.reduce((s, p) => s + p.summe, 0);
+
+      const payload = {
+        chatId: chatId,
+        userName: userName,
+        token: editToken,
+        positionen: positionen,
+        gesamtpreis: +gesamtpreis.toFixed(2),
+        zeitpunkt: new Date().toISOString()
+      };
+
+      if (isDemoMode) {
+        showToast('Demo: Bestellung würde jetzt gesendet');
+        btn.disabled = false;
+        updateFooter();
+        return;
+      }
+
+      try {
+        const res = await fetch(WEBHOOK_BESTELLUNG, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error('Server-Fehler');
+
+        const data = await res.json();
+
+        showToast(editToken ? 'Bestellung aktualisiert! ✅' : 'Bestellung gesendet! ✅');
+
+        // Close WebApp after short delay
+        if (tg) {
+          setTimeout(() => tg.close(), 1500);
+        }
+      } catch (err) {
+        console.error('Bestellfehler:', err);
+        showToast('Fehler beim Senden. Bitte erneut versuchen.', 'error');
+        btn.disabled = false;
+        updateFooter();
+      }
+    }
+
+    // ============================================================
+    // SEARCH & FILTER
+    // ============================================================
+    let activeCategory = 'all';
+
+    function selectCategory(cat, el) {
+      activeCategory = cat;
+      document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      filterArticles();
+    }
+
+    function filterArticles() {
+      const search = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+      document.querySelectorAll('.category-group').forEach(group => {
+        const cat = group.dataset.category;
+        const matchesCat = activeCategory === 'all' || cat === activeCategory;
+
+        let visibleInGroup = 0;
+        group.querySelectorAll('.article-card').forEach(card => {
+          const name = card.querySelector('.article-name').textContent.toLowerCase();
+          const matchesSearch = !search || name.includes(search);
+          const show = matchesCat && matchesSearch;
+          card.style.display = show ? 'flex' : 'none';
+          if (show) visibleInGroup++;
+        });
+
+        // Hide category heading if no items visible
+        group.style.display = visibleInGroup > 0 ? 'block' : 'none';
+      });
+    }
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function formatCurrency(val) {
+      return '€' + val.toFixed(2).replace('.', ',');
+    }
+
+    function showToast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast ' + type;
+      setTimeout(() => t.classList.add('show'), 10);
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+{
+  "name": "05 - Bestellung laden (Token)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bestellung",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "webhook-get-order",
+      "name": "Webhook GET Bestellung",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "bestellung-get"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Bestellung per Token laden\nconst query = $input.first().json.query || {};\nconst token = query.token;\n\nif (!token) {\n  return [{ json: { \n    error: 'Token parameter fehlt', \n    code: 400 \n  }}];\n}\n\nconst staticData = $getWorkflowStaticData('global');\nconst tokens = staticData.tokens || {};\nconst chatId = tokens[token];\n\nif (!chatId) {\n  return [{ json: { \n    error: 'Ungültiger oder abgelaufener Token', \n    code: 404 \n  }}];\n}\n\nconst bestellungen = staticData.bestellungen || {};\nconst bestellung = bestellungen[chatId];\n\nif (!bestellung) {\n  return [{ json: { \n    error: 'Bestellung nicht gefunden', \n    code: 404 \n  }}];\n}\n\nreturn [{ json: {\n  chatId: bestellung.chatId,\n  userName: bestellung.userName,\n  positionen: bestellung.positionen,\n  gesamtpreis: bestellung.gesamtpreis,\n  token: token,\n  zeitpunkt: bestellung.zeitpunkt,\n  code: 200\n}}];"
+      },
+      "id": "load-order-by-token",
+      "name": "Bestellung per Token laden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": "={{ $json.code || 200 }}",
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "respond-order",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 300]
+    }
+  ],
+  "connections": {
+    "Webhook GET Bestellung": {
+      "main": [[{ "node": "Bestellung per Token laden", "type": "main", "index": 0 }]]
+    },
+    "Bestellung per Token laden": {
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {
+    "global": {
+      "bestellungen": {},
+      "tokens": {}
+    }
+  },
+  "tags": [{ "name": "Yauno" }]
+}

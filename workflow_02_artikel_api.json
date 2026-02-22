@@ -1,0 +1,74 @@
+{
+  "name": "02 - Artikel API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "artikel",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "webhook-artikel",
+      "name": "Webhook Artikel",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "artikel"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Artikel aus Static Data von Workflow 01 laden\n// HINWEIS: Alle Workflows müssen im selben Projekt sein,\n// oder eine externe Datei als Speicher nutzen.\n\nconst staticData = $getWorkflowStaticData('global');\n\nconst response = {\n  artikel: staticData.artikel || [],\n  bestellung_aktiv: staticData.bestellung_aktiv !== false,\n  angebot_datum: staticData.angebot_datum || '',\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: response }];"
+      },
+      "id": "prepare-response",
+      "name": "Artikelliste vorbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Artikel": {
+      "main": [[{ "node": "Artikelliste vorbereiten", "type": "main", "index": 0 }]]
+    },
+    "Artikelliste vorbereiten": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {
+    "global": {
+      "artikel": [],
+      "bestellung_aktiv": false,
+      "angebot_datum": ""
+    }
+  },
+  "tags": [{ "name": "Yauno" }]
+}

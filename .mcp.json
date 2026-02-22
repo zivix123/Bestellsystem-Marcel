@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "n8n": {
+      "command": "npx",
+      "args": ["-y", "@illuminaresystems/n8n-mcp-server"],
+      "env": {
+        "N8N_HOST": "http://46.225.80.178:5678",
+        "N8N_API_KEY": "DEIN_N8N_API_KEY_HIER_EINTRAGEN"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
+      "env": {}
+    }
+  }
+}

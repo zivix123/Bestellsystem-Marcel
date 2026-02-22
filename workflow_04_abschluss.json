@@ -1,0 +1,178 @@
+{
+  "name": "04 - Bestellschluss & Auswertung",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 20 * * 3"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Mittwoch 20:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Bestellfenster schließen und Daten sammeln\nconst staticData = $getWorkflowStaticData('global');\nstaticData.bestellung_aktiv = false;\n\nconst bestellungen = staticData.bestellungen || {};\nconst artikel = staticData.artikel || [];\nconst datum = staticData.angebot_datum || '';\n\nconst alleBestellungen = Object.values(bestellungen);\n\nif (alleBestellungen.length === 0) {\n  return [{ json: { \n    leer: true, \n    message: 'Keine Bestellungen eingegangen',\n    datum: datum\n  }}];\n}\n\n// Zusammenfassung erstellen\nlet artikelSummen = {};\nlet gesamtUmsatz = 0;\n\nalleBestellungen.forEach(best => {\n  (best.positionen || []).forEach(pos => {\n    const key = pos.artikelId || pos.name;\n    if (!artikelSummen[key]) {\n      artikelSummen[key] = {\n        name: pos.name,\n        einheit: pos.einheit,\n        preis: pos.preis,\n        gesamtMenge: 0,\n        gesamtSumme: 0\n      };\n    }\n    artikelSummen[key].gesamtMenge += pos.menge;\n    artikelSummen[key].gesamtSumme += pos.summe || (pos.menge * pos.preis);\n  });\n  gesamtUmsatz += best.gesamtpreis || 0;\n});\n\n// Daten für Excel vorbereiten\nconst excelRows = [];\n\n// Header\nexcelRows.push({\n  A: 'Yauno Bestellauswertung',\n  B: '',\n  C: '',\n  D: '',\n  E: ''\n});\nexcelRows.push({\n  A: 'Lieferdatum: ' + datum,\n  B: '',\n  C: 'Erstellt: ' + new Date().toLocaleString('de-DE'),\n  D: '',\n  E: ''\n});\nexcelRows.push({ A: '', B: '', C: '', D: '', E: '' });\n\n// TEIL 1: Artikel-Zusammenfassung\nexcelRows.push({\n  A: 'ARTIKELÜBERSICHT',\n  B: '',\n  C: '',\n  D: '',\n  E: ''\n});\nexcelRows.push({\n  A: 'Artikel',\n  B: 'Einheit',\n  C: 'Einzelpreis',\n  D: 'Gesamt Menge',\n  E: 'Gesamt Summe'\n});\n\nObject.values(artikelSummen)\n  .sort((a, b) => a.name.localeCompare(b.name))\n  .forEach(art => {\n    excelRows.push({\n      A: art.name,\n      B: art.einheit,\n      C: art.preis,\n      D: art.gesamtMenge,\n      E: Math.round(art.gesamtSumme * 100) / 100\n    });\n  });\n\nexcelRows.push({ A: '', B: '', C: '', D: 'GESAMT:', E: Math.round(gesamtUmsatz * 100) / 100 });\nexcelRows.push({ A: '', B: '', C: '', D: '', E: '' });\n\n// TEIL 2: Einzelbestellungen\nexcelRows.push({\n  A: 'EINZELBESTELLUNGEN',\n  B: '',\n  C: '',\n  D: '',\n  E: ''\n});\n\nalleBestellungen.forEach(best => {\n  excelRows.push({\n    A: '👤 ' + (best.userName || 'Unbekannt'),\n    B: 'Chat: ' + best.chatId,\n    C: '',\n    D: 'Summe:',\n    E: best.gesamtpreis\n  });\n  (best.positionen || []).forEach(pos => {\n    excelRows.push({\n      A: '  ' + pos.name,\n      B: pos.einheit,\n      C: pos.preis,\n      D: pos.menge,\n      E: pos.summe || (pos.menge * pos.preis)\n    });\n  });\n  excelRows.push({ A: '', B: '', C: '', D: '', E: '' });\n});\n\nreturn [{ json: {\n  leer: false,\n  rows: excelRows,\n  datum: datum,\n  anzahlBestellungen: alleBestellungen.length,\n  gesamtUmsatz: Math.round(gesamtUmsatz * 100) / 100\n}}];"
+      },
+      "id": "prepare-summary",
+      "name": "Auswertung vorbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.leer }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEquals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "has-orders",
+      "name": "Bestellungen vorhanden?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Zeilen für Excel splitten\nconst rows = $input.first().json.rows;\nreturn rows.map(row => ({ json: row }));"
+      },
+      "id": "split-rows",
+      "name": "Zeilen aufteilen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [860, 240]
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {
+          "fileName": "=Auswertung_{{ $('Auswertung vorbereiten').item.json.datum.replace(/\\./g, '_') }}.xlsx"
+        }
+      },
+      "id": "create-excel",
+      "name": "Excel erstellen",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 2,
+      "position": [1080, 240]
+    },
+    {
+      "parameters": {
+        "chatId": "ADMIN_CHAT_ID_HIER",
+        "text": "=📊 *Bestellschluss – Auswertung*\n\n📅 Lieferdatum: {{ $('Auswertung vorbereiten').item.json.datum }}\n🛒 {{ $('Auswertung vorbereiten').item.json.anzahlBestellungen }} Bestellungen\n💰 Gesamt: €{{ $('Auswertung vorbereiten').item.json.gesamtUmsatz.toFixed(2).replace('.', ',') }}\n\n📎 Excel-Auswertung siehe Anhang ⬇️",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "send-summary-msg",
+      "name": "Zusammenfassung senden",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1300, 160],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "ADMIN_CHAT_ID_HIER",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "additionalFields": {
+          "caption": "📊 Bestellauswertung"
+        }
+      },
+      "id": "send-excel",
+      "name": "Excel senden",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1300, 340],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Tokens und Bestellungen zurücksetzen\nconst staticData = $getWorkflowStaticData('global');\nstaticData.bestellungen = {};\nstaticData.tokens = {};\nstaticData.bestellung_aktiv = false;\n// Artikel und Käufer bleiben erhalten\nreturn [{ json: { cleaned: true } }];"
+      },
+      "id": "cleanup",
+      "name": "Aufräumen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1520, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "ADMIN_CHAT_ID_HIER",
+        "text": "📭 Bestellschluss – Keine Bestellungen diese Woche eingegangen.",
+        "additionalFields": {}
+      },
+      "id": "no-orders-msg",
+      "name": "Keine Bestellungen",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [860, 420],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Mittwoch 20:00": {
+      "main": [[{ "node": "Auswertung vorbereiten", "type": "main", "index": 0 }]]
+    },
+    "Auswertung vorbereiten": {
+      "main": [[{ "node": "Bestellungen vorhanden?", "type": "main", "index": 0 }]]
+    },
+    "Bestellungen vorhanden?": {
+      "main": [
+        [{ "node": "Zeilen aufteilen", "type": "main", "index": 0 }],
+        [{ "node": "Keine Bestellungen", "type": "main", "index": 0 }]
+      ]
+    },
+    "Zeilen aufteilen": {
+      "main": [[{ "node": "Excel erstellen", "type": "main", "index": 0 }]]
+    },
+    "Excel erstellen": {
+      "main": [[
+        { "node": "Zusammenfassung senden", "type": "main", "index": 0 },
+        { "node": "Excel senden", "type": "main", "index": 0 }
+      ]]
+    },
+    "Excel senden": {
+      "main": [[{ "node": "Aufräumen", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "Yauno" }]
+}
