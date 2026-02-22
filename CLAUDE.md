@@ -48,6 +48,11 @@ Telegram Bot:   Credential "Telegram account" in n8n
 Admin Chat ID:  1121266642
 ```
 
+**n8n Umgebungsvariable:**
+Die WebApp-URL wird zentral über die n8n Variable `WEBAPP_URL` gepflegt.
+Workflows 01 und 03 verwenden `{{ $env.WEBAPP_URL }}` statt einer hardcoded URL.
+Setzen unter: **n8n → Settings → Variables → `WEBAPP_URL`**
+
 ---
 
 ## Webhook-Endpunkte

@@ -71,7 +71,21 @@ Die generierte `https://xxx.trycloudflare.com` URL dann:
 
 ---
 
-## 5. Workflows in n8n importieren
+## 5. n8n Umgebungsvariable setzen
+
+Die Workflows verwenden eine Umgebungsvariable für die WebApp-URL. So musst du die URL nur an **einer Stelle** pflegen:
+
+In n8n: **Settings → Variables** → Neue Variable anlegen:
+
+| Variable | Wert |
+|----------|------|
+| `WEBAPP_URL` | `https://deine-app.netlify.app` |
+
+Die Workflows greifen dann per `{{ $env.WEBAPP_URL }}` darauf zu.
+
+---
+
+## 6. Workflows in n8n importieren
 
 Für jeden Workflow in `workflows/`:
 
@@ -79,7 +93,6 @@ Für jeden Workflow in `workflows/`:
 2. JSON-Datei auswählen
 3. **Platzhalter ersetzen** in allen Workflows:
    - `ADMIN_CHAT_ID_HIER` → Deine Telegram Chat-ID (erfährst du via @userinfobot)
-   - `https://jade-alfajores-4f3440.netlify.app` → Deine Netlify-URL
 4. Telegram Credential zuweisen (falls nötig)
 5. Workflows aktivieren
 
@@ -92,9 +105,11 @@ Für jeden Workflow in `workflows/`:
 | 04 | workflow_04_abschluss.json | Bestellschluss + Excel | Cron Mi 20:00 |
 | 05 | workflow_05_get_order.json | Bestellung laden (Edit) | GET Webhook |
 
+> **Hinweis:** Die Workflows 01 und 03 verwenden `$env.WEBAPP_URL` für die WebApp-URL. Stelle sicher, dass die Variable in Schritt 5 korrekt gesetzt ist.
+
 ---
 
-## 6. Static Data – Wichtiger Hinweis
+## 7. Static Data – Wichtiger Hinweis
 
 Die Workflows kommunizieren über `staticData`. **Alle 5 Workflows müssen Zugriff auf die gleichen Daten haben.**
 
@@ -114,7 +129,7 @@ fs.writeFileSync('/data/yauno-state.json', JSON.stringify(data));
 
 ---
 
-## 7. Excel-Format für Angebote
+## 8. Excel-Format für Angebote
 
 Die hochgeladene Excel-Datei muss folgendem Format entsprechen:
 
@@ -135,7 +150,7 @@ Sonderzeilen:
 
 ---
 
-## 8. Testen
+## 9. Testen
 
 1. **Bot starten**: `/start` an den Bot senden
 2. **Excel hochladen**: Eine Bestelliste als Admin an den Bot senden
@@ -146,7 +161,7 @@ Sonderzeilen:
 
 ---
 
-## 9. Käufer registrieren
+## 10. Käufer registrieren
 
 Käufer werden automatisch registriert, sobald sie ihre erste Bestellung aufgeben. Ihre Chat-ID wird in der `kaeufer`-Liste gespeichert und sie werden bei neuen Angeboten benachrichtigt.
 

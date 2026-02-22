@@ -187,7 +187,7 @@
                     {
                       "text": "🛒 Jetzt bestellen",
                       "additionalFields": {
-                        "url": "https://jade-alfajores-4f3440.netlify.app"
+                        "url": "={{ $env.WEBAPP_URL }}"
                       }
                     }
                   ]

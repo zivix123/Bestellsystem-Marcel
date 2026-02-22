@@ -84,7 +84,7 @@
                     {
                       "text": "✏️ Bestellung bearbeiten",
                       "additionalFields": {
-                        "url": "=https://jade-alfajores-4f3440.netlify.app?token={{ $json.token }}"
+                        "url": "={{ $env.WEBAPP_URL }}?token={{ $json.token }}"
                       }
                     }
                   ]
