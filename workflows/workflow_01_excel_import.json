@@ -111,7 +111,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Artikel aus dem Excel-Format extrahieren\nconst rows = $input.all().map(i => i.json);\nlet artikel = [];\nlet kategorie = 'Allgemein';\nlet id = 1;\nlet startParsing = false;\nlet datumMatch = null;\n\nfor (const row of rows) {\n  const values = Object.values(row);\n  const joined = values.join(' ').trim();\n  \n  // Lieferdatum suchen (z.B. in Header-Zeilen)\n  if (!datumMatch) {\n    const dMatch = joined.match(/(\\d{1,2}[.\\/]\\d{1,2}[.\\/]\\d{2,4})/);\n    if (dMatch) datumMatch = dMatch[1];\n  }\n  \n  // Spaltenheader erkennen → ab nächster Zeile parsen\n  if (joined.toLowerCase().includes('artikel') && joined.toLowerCase().includes('preis')) {\n    startParsing = true;\n    continue;\n  }\n  \n  if (!startParsing) continue;\n  \n  // Ende erkennen\n  if (joined.toLowerCase().includes('gesamt zu zahlen')) break;\n  \n  // Kategorie-Wechsel\n  if (joined.toLowerCase().includes('tagesangebote')) {\n    kategorie = 'Tagesangebote';\n    continue;\n  }\n  \n  // Leere Zeile überspringen\n  const col_B = values[1]; // Artikelname\n  const col_C = values[2]; // Einheit\n  const col_D = values[3]; // Preis\n  \n  if (!col_B || String(col_B).trim() === '') continue;\n  \n  const preis = parseFloat(String(col_D).replace(',', '.'));\n  if (isNaN(preis) || preis <= 0) continue;\n  \n  artikel.push({\n    id: id++,\n    name: String(col_B).trim(),\n    einheit: String(col_C || '').trim() || 'Stück',\n    preis: Math.round(preis * 100) / 100,\n    kategorie: kategorie\n  });\n}\n\n// In Static Data speichern\nconst staticData = $getWorkflowStaticData('global');\nstaticData.artikel = artikel;\nstaticData.bestellungen = {};\nstaticData.tokens = {};\nstaticData.bestellung_aktiv = true;\nstaticData.kaeufer = staticData.kaeufer || [];\nstaticData.angebot_datum = datumMatch || new Date().toLocaleDateString('de-DE');\n\n// Gemeinsame Datei für alle Workflows schreiben\nconst fs = require('fs');\nconst SHARED = '/tmp/yauno_data.json';\nlet shared = {};\ntry { shared = JSON.parse(fs.readFileSync(SHARED, 'utf8')); } catch(e) {}\nshared.artikel = artikel;\nshared.bestellungen = {};\nshared.tokens = {};\nshared.bestellung_aktiv = true;\nshared.kaeufer = shared.kaeufer || [];\nshared.angebot_datum = staticData.angebot_datum;\nfs.writeFileSync(SHARED, JSON.stringify(shared, null, 2));\n\nreturn [{ json: { \n  artikel_count: artikel.length, \n  datum: staticData.angebot_datum,\n  artikel: artikel \n}}];"
+        "jsCode": "// Artikel aus dem Excel-Format extrahieren\n// Unterstützt Dateien mit und ohne 'Tagesangebote:'-Zeile\nconst rows = $input.all().map(i => i.json);\nlet artikel = [];\nlet kategorie = 'Allgemein';\nlet id = 1;\nlet startParsing = false;\nlet datumMatch = null;\n\nfor (const row of rows) {\n  const values = Object.values(row);\n  const joined = values.join(' ').trim();\n  \n  if (!joined) continue;\n  \n  // Lieferdatum suchen (z.B. in Header-Zeilen)\n  if (!datumMatch) {\n    const dMatch = joined.match(/(\\d{1,2}[.\\/]\\d{1,2}[.\\/]\\d{2,4})/);\n    if (dMatch) datumMatch = dMatch[1];\n  }\n  \n  // Spaltenheader erkennen → ab nächster Zeile parsen\n  const lower = joined.toLowerCase();\n  if (lower.includes('artikel') && lower.includes('preis')) {\n    startParsing = true;\n    continue;\n  }\n  \n  if (!startParsing) continue;\n  \n  // Ende erkennen\n  if (lower.includes('gesamt zu zahlen') || lower.includes('gesamtsumme')) break;\n  \n  // Kategorie-Wechsel: 'Tagesangebote' oder andere Kategoriezeilen\n  // Erkannt wenn: nur eine Spalte Text hat und kein Preis vorhanden ist\n  if (lower.includes('tagesangebote')) {\n    kategorie = 'Tagesangebote';\n    continue;\n  }\n  \n  // Weitere Kategorie-Marker erkennen (Zeile mit Text aber ohne Preis)\n  const col_B = values[1];\n  const col_D = values[3];\n  const textOnly = col_B && String(col_B).trim() !== '' && (!col_D || String(col_D).trim() === '');\n  const col_A = values[0];\n  const hasNoQty = !col_A || String(col_A).trim() === '';\n  if (textOnly && hasNoQty && String(col_B).trim().endsWith(':')) {\n    kategorie = String(col_B).trim().replace(/:$/, '');\n    continue;\n  }\n  \n  // Leere Zeile überspringen\n  if (!col_B || String(col_B).trim() === '') continue;\n  \n  const preis = parseFloat(String(col_D || '0').replace(',', '.'));\n  if (isNaN(preis) || preis <= 0) continue;\n  \n  const col_C = values[2];\n  artikel.push({\n    id: id++,\n    name: String(col_B).trim(),\n    einheit: String(col_C || '').trim() || 'Stück',\n    preis: Math.round(preis * 100) / 100,\n    kategorie: kategorie\n  });\n}\n\n// Fallback: Wenn keine Tagesangebote-Zeile vorhanden war,\n// bleiben alle Artikel in 'Allgemein' – das ist gewollt.\n\n// In Static Data speichern\nconst staticData = $getWorkflowStaticData('global');\nstaticData.artikel = artikel;\nstaticData.bestellungen = {};\nstaticData.tokens = {};\nstaticData.bestellung_aktiv = true;\nstaticData.kaeufer = staticData.kaeufer || [];\nstaticData.angebot_datum = datumMatch || new Date().toLocaleDateString('de-DE');\nstaticData.webapp_url = staticData.webapp_url || 'https://jade-alfajores-4f3440.netlify.app';\n\nreturn [{ json: { \n  artikel_count: artikel.length, \n  datum: staticData.angebot_datum,\n  artikel: artikel \n}}];"
       },
       "id": "extract-articles",
       "name": "Artikel extrahieren",
@@ -141,7 +141,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Käufer-Liste aus Static Data laden\nconst staticData = $getWorkflowStaticData('global');\nconst kaeufer = staticData.kaeufer || [];\n\nif (kaeufer.length === 0) {\n  return [{ json: { skip: true, message: 'Keine Käufer registriert' } }];\n}\n\nreturn kaeufer.map(chatId => ({\n  json: {\n    chatId: String(chatId),\n    datum: staticData.angebot_datum,\n    artikelCount: (staticData.artikel || []).length\n  }\n}));"
+        "jsCode": "// Käufer-Liste aus Static Data laden\nconst staticData = $getWorkflowStaticData('global');\nconst kaeufer = staticData.kaeufer || [];\n\nif (kaeufer.length === 0) {\n  return [{ json: { skip: true, message: 'Keine Käufer registriert' } }];\n}\n\nreturn kaeufer.map(chatId => ({\n  json: {\n    chatId: String(chatId),\n    datum: staticData.angebot_datum,\n    artikelCount: (staticData.artikel || []).length,\n    webapp_url: staticData.webapp_url || 'https://jade-alfajores-4f3440.netlify.app'\n  }\n}));"
       },
       "id": "get-buyers",
       "name": "Käufer laden",
@@ -187,7 +187,7 @@
                     {
                       "text": "🛒 Jetzt bestellen",
                       "additionalFields": {
-                        "url": "https://jade-alfajores-4f3440.netlify.app"
+                        "url": "={{ $json.webapp_url }}"
                       }
                     }
                   ]
@@ -226,6 +226,48 @@
           "name": "Telegram account"
         }
       }
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "admin-artikel",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-admin-artikel",
+      "name": "Webhook Admin Artikel",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 600],
+      "webhookId": "admin-artikel"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Admin-Endpoint: Artikeldaten für andere Workflows bereitstellen\nconst staticData = $getWorkflowStaticData('global');\nreturn [{ json: {\n  artikel: staticData.artikel || [],\n  bestellung_aktiv: staticData.bestellung_aktiv !== false,\n  angebot_datum: staticData.angebot_datum || '',\n  kaeufer: staticData.kaeufer || [],\n  webapp_url: staticData.webapp_url || 'https://jade-alfajores-4f3440.netlify.app'\n}}];"
+      },
+      "id": "admin-artikel-data",
+      "name": "Admin Artikeldaten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 600]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "admin-artikel-respond",
+      "name": "Admin Artikel Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 600]
     }
   ],
   "connections": {
@@ -267,6 +309,12 @@
         [{ "node": "Käufer benachrichtigen", "type": "main", "index": 0 }],
         []
       ]
+    },
+    "Webhook Admin Artikel": {
+      "main": [[{ "node": "Admin Artikeldaten", "type": "main", "index": 0 }]]
+    },
+    "Admin Artikeldaten": {
+      "main": [[{ "node": "Admin Artikel Respond", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
@@ -279,7 +327,8 @@
       "tokens": {},
       "bestellung_aktiv": false,
       "kaeufer": [],
-      "angebot_datum": ""
+      "angebot_datum": "",
+      "webapp_url": "https://jade-alfajores-4f3440.netlify.app"
     }
   },
   "tags": [{ "name": "Yauno" }]

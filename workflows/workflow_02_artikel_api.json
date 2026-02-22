@@ -19,13 +19,26 @@
     },
     {
       "parameters": {
-        "jsCode": "// Artikel aus gemeinsamer Datei laden (geschrieben von Workflow 01)\nconst fs = require('fs');\nconst SHARED = '/tmp/yauno_data.json';\nlet shared = {};\ntry { shared = JSON.parse(fs.readFileSync(SHARED, 'utf8')); } catch(e) {}\n\nconst response = {\n  artikel: shared.artikel || [],\n  bestellung_aktiv: shared.bestellung_aktiv !== false,\n  angebot_datum: shared.angebot_datum || '',\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: response }];"
+        "url": "={{ $env.N8N_BASE_URL }}/webhook/admin-artikel",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "fetch-artikel",
+      "name": "Artikel von WF01 laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Daten aus WF01 Admin-Endpoint aufbereiten\nconst data = $input.first().json;\n\nreturn [{ json: {\n  artikel: data.artikel || [],\n  bestellung_aktiv: data.bestellung_aktiv !== false,\n  angebot_datum: data.angebot_datum || '',\n  timestamp: new Date().toISOString()\n}}];"
       },
       "id": "prepare-response",
       "name": "Artikelliste vorbereiten",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 300]
+      "position": [640, 300]
     },
     {
       "parameters": {
@@ -49,11 +62,14 @@
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [640, 300]
+      "position": [860, 300]
     }
   ],
   "connections": {
     "Webhook Artikel": {
+      "main": [[{ "node": "Artikel von WF01 laden", "type": "main", "index": 0 }]]
+    },
+    "Artikel von WF01 laden": {
       "main": [[{ "node": "Artikelliste vorbereiten", "type": "main", "index": 0 }]]
     },
     "Artikelliste vorbereiten": {
@@ -62,13 +78,6 @@
   },
   "settings": {
     "executionOrder": "v1"
-  },
-  "staticData": {
-    "global": {
-      "artikel": [],
-      "bestellung_aktiv": false,
-      "angebot_datum": ""
-    }
   },
   "tags": [{ "name": "Yauno" }]
 }

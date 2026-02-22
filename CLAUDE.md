@@ -12,9 +12,10 @@ Du arbeitest am **Yauno Lebensmittel Bestellsystem** – einem vollautomatischen
 [Admin] Excel hochladen → Telegram Bot
     → n8n Workflow 01: Artikel parsen + Käufer benachrichtigen
     → Käufer öffnen Telegram Mini WebApp (index.html auf Netlify)
-    → n8n Workflow 03: Bestellung speichern + Token generieren
+    → n8n Workflow 02: GET /webhook/artikel → Artikelliste
+    → n8n Workflow 03: POST /webhook/bestellung → Bestellung speichern + Token
     → Käufer erhalten Bearbeitungslink per Telegram
-    → n8n Workflow 05: Bestellung per Token laden (Bearbeiten-Modus)
+    → n8n Workflow 05: GET /webhook/bestellung-get?token= → Bestellung laden
     → Mittwoch 20:00 Uhr: Workflow 04 (Cron) → Excel-Auswertung an Admin
 ```
 
@@ -24,16 +25,16 @@ Du arbeitest am **Yauno Lebensmittel Bestellsystem** – einem vollautomatischen
 
 ```
 /project
-├── workflow_01_excel_import.json       # Telegram Trigger, Excel parsen, Käufer notify
-├── workflow_02_artikel_api.json        # GET /webhook/artikel → Artikelliste
-├── workflow_03_bestellung_v2.json      # POST /webhook/bestellung → Token generieren
-├── workflow_04_abschluss.json          # Cron Mi 20:00 → Bestellschluss + Excel
-├── workflow_05_get_order.json          # GET /webhook/bestellung?token= → Bestellung laden
-├── index.html                          # Telegram Mini WebApp (Vanilla JS)
-├── deploy_to_n8n.ps1                   # PowerShell Deploy-Script (lokal, nicht in Git)
-├── .mcp.json                           # MCP Server Konfiguration
-├── .gitignore                          # Schützt deploy_to_n8n.ps1 vor Git
-└── CLAUDE.md                           # Diese Datei
+├── workflows/
+│   ├── workflow_01_excel_import.json       # Telegram Trigger, Excel parsen, Käufer notify
+│   ├── workflow_02_artikel_api.json        # GET /webhook/artikel → Artikelliste
+│   ├── workflow_03_bestellung_v2.json      # POST /webhook/bestellung → Bestellung speichern
+│   ├── workflow_04_abschluss.json          # Cron Mi 20:00 → Bestellschluss + Excel
+│   └── workflow_05_get_order.json          # GET /webhook/bestellung-get → Bestellung laden
+├── webapp/
+│   └── index.html                          # Telegram Mini WebApp (Vanilla JS)
+├── README.md                               # Setup-Anleitung
+└── CLAUDE.md                               # Diese Datei
 ```
 
 ---
@@ -41,13 +42,65 @@ Du arbeitest am **Yauno Lebensmittel Bestellsystem** – einem vollautomatischen
 ## Konfiguration (aktuelle Werte)
 
 ```
-n8n URL:            http://46.225.80.178:5678
-n8n HTTPS URL:      [CLOUDFLARE TUNNEL URL HIER EINTRAGEN]
-WebApp URL:         https://jade-alfajores-4f3440.netlify.app
-Telegram Bot:       Credential "Telegram account" in n8n (ID: 1)
-Admin Chat ID:      1121266642
-Shared Data File:   /tmp/yauno_data.json  ← MUSS auf persistenten Pfad geändert werden!
+n8n URL:        https://tracker-rubber-animation-accommodations.trycloudflare.com
+WebApp URL:     https://jade-alfajores-4f3440.netlify.app
+Telegram Bot:   Credential "Telegram account" in n8n
+Admin Chat ID:  1121266642
 ```
+
+**n8n Base-URL zentral verwaltet (Umgebungsvariable):**
+Die Workflows 02, 04 und 05 lesen die n8n-URL aus der Umgebungsvariable `N8N_BASE_URL`.
+Beim Docker-Start setzen:
+```bash
+docker run -e N8N_BASE_URL=https://tracker-rubber-animation-accommodations.trycloudflare.com ...
+```
+Wenn sich die Cloudflare-Tunnel-URL ändert, muss nur diese eine Variable angepasst werden.
+
+**WebApp-URL zentral verwaltet:**
+Die WebApp-URL wird über `staticData.webapp_url` in der globalen Static Data gepflegt.
+Workflows 01 und 03 lesen die URL aus der Static Data und geben sie an die Telegram-Buttons weiter.
+Ändern unter: **n8n → Workflow 01 → Settings → Static Data → `webapp_url`**
+
+---
+
+## Webhook-Endpunkte
+
+| Workflow | Methode | Pfad (webhookId)         | Beschreibung                      |
+|----------|---------|--------------------------|-----------------------------------|
+| 01       | —       | Telegram Trigger         | Excel-Datei vom Admin empfangen   |
+| 01       | GET     | /webhook/admin-artikel   | Interne API: Artikeldaten lesen   |
+| 02       | GET     | /webhook/artikel         | Artikelliste für WebApp           |
+| 03       | POST    | /webhook/bestellung      | Bestellung speichern              |
+| 03       | GET     | /webhook/admin-bestellungen | Interne API: Bestelldaten lesen |
+| 03       | POST    | /webhook/admin-close     | Interne API: Bestellungen schließen |
+| 04       | —       | Cron (Mi 20:00)          | Bestellschluss + Auswertung       |
+| 05       | GET     | /webhook/bestellung-get  | Bestellung per Token laden        |
+
+---
+
+## n8n Datenstruktur (Static Data)
+
+Die Workflows kommunizieren über `$getWorkflowStaticData('global')`:
+
+```javascript
+{
+  artikel: [{ id, name, einheit, preis, kategorie }],   // aus Excel geparst
+  bestellungen: { [chat_id]: { ...bestellung, token } }, // alle Bestellungen
+  tokens: { [token]: chat_id },                          // Token → Chat-ID Mapping
+  bestellung_aktiv: true/false,                          // Bestellfenster offen?
+  kaeufer: [chat_id, ...],                               // registrierte Käufer
+  angebot_datum: "18.02.26",                             // Lieferdatum
+  webapp_url: "https://..."                              // WebApp-URL (zentral gepflegt)
+}
+```
+
+**Wichtig:** Jeder Workflow hat seine eigene Static Data (`$getWorkflowStaticData('global')`
+ist pro Workflow isoliert). Die Daten-Workflows (01, 03) stellen interne Admin-Webhooks
+bereit, über die andere Workflows per HTTP Request (`https://tracker-rubber-animation-accommodations.trycloudflare.com/webhook/...`)
+auf die Daten zugreifen:
+- **WF 01** → `GET /webhook/admin-artikel` (Artikeldaten, Bestellstatus, Datum)
+- **WF 03** → `GET /webhook/admin-bestellungen` (alle Bestellungen, Tokens)
+- **WF 03** → `POST /webhook/admin-close` (Bestellfenster schließen, Daten bereinigen)
 
 ---
 
@@ -56,11 +109,12 @@ Shared Data File:   /tmp/yauno_data.json  ← MUSS auf persistenten Pfad geände
 ### Erledigt:
 - [x] Alle 5 Workflows erstellt und logisch korrekt
 - [x] `ADMIN_CHAT_ID_HIER` Platzhalter durch `1121266642` ersetzt (WF 01, 03, 04)
-- [x] Gemeinsame JSON-Datei (`/tmp/yauno_data.json`) für Datenaustausch zwischen Workflows
+- [x] Static Data Isolation gelöst: Interne Admin-Webhooks für Cross-Workflow-Kommunikation
 - [x] Workflow 03: httpMethod Bug gefixt (POST statt dynamisch), GET-Branch entfernt
 - [x] WebApp (index.html) vollständig: Bestellung, Bearbeiten-Modus, Demo-Modus, Suche
-- [x] Deploy-Script (deploy_to_n8n.ps1) erstellt
-- [x] .gitignore für API-Key-Schutz eingerichtet
+- [x] Mengenwarnung: WF 03 prüft auf >50 Einheiten und warnt Admin
+- [x] Käufer-Registrierung: Automatisch bei erster Bestellung
+- [x] Projektstruktur: workflows/ und webapp/ Ordner
 - [x] Projekt auf GitHub gepusht (zivix123/Bestellsystem-Marcel)
 
 ---
@@ -73,91 +127,29 @@ Shared Data File:   /tmp/yauno_data.json  ← MUSS auf persistenten Pfad geände
   cloudflared tunnel --url http://localhost:5678
   ```
 - [ ] Permanente Tunnel-URL erhalten (oder `cloudflared tunnel create` für stabile URL)
-- [ ] Tunnel-URL in n8n eintragen: Settings → Webhook URL
-- [ ] Webhook-URLs in `index.html` aktualisieren (3 Stellen oben):
-  ```javascript
-  const WEBHOOK_ARTIKEL        = 'https://[TUNNEL-URL]/webhook/artikel';
-  const WEBHOOK_BESTELLUNG     = 'https://[TUNNEL-URL]/webhook/bestellung';
-  const WEBHOOK_BESTELLUNG_GET = 'https://[TUNNEL-URL]/webhook/bestellung';
-  ```
-- [ ] Button-URLs in Workflows aktualisieren:
-  - WF 01: Käufer-Benachrichtigung → WebApp Button-URL
-  - WF 03: Bearbeitungslink → WebApp Button-URL mit Token
+- [ ] Tunnel-URL als `N8N_BASE_URL` Umgebungsvariable setzen
+- [ ] Webhook-URL in `webapp/index.html` als `N8N_BASE_URL` eintragen
 
-### Phase 2: Persistenter Datenspeicher
-- [ ] Permanenten Ordner auf Server anlegen:
-  ```bash
-  sudo mkdir -p /opt/yauno
-  sudo chown n8n:n8n /opt/yauno
-  ```
-- [ ] Pfad in allen 5 Workflows ändern: `/tmp/yauno_data.json` → `/opt/yauno/data.json`
-  - WF 01: Artikel extrahieren (Code-Node)
-  - WF 02: Artikelliste vorbereiten (Code-Node)
-  - WF 03: Bestellung speichern (Code-Node)
-  - WF 04: Auswertung vorbereiten + Aufräumen (2 Code-Nodes)
-  - WF 05: Bestellung per Token laden (Code-Node)
-- [ ] n8n Umgebungsvariable setzen: `NODE_FUNCTION_ALLOW_BUILTIN=fs`
-  (damit `require('fs')` in Code-Nodes funktioniert)
-
-### Phase 3: Telegram Bot einrichten
+### Phase 2: Telegram Bot einrichten
 - [ ] Bot-Token über @BotFather erstellen (falls nicht vorhanden)
 - [ ] Telegram Credential in n8n einrichten: Settings → Credentials → Telegram API
 - [ ] Credential-ID in allen Telegram-Nodes prüfen (aktuell: ID "1", Name "Telegram account")
 
-### Phase 4: Workflows deployen & testen
-- [ ] Alle 5 Workflows in n8n importieren (Deploy-Script oder manuell Import from File)
+### Phase 3: Workflows deployen & testen
+- [ ] Alle 5 Workflows in n8n importieren
 - [ ] Alle Workflows aktivieren
-- [ ] **Test 1:** Excel als Admin an Bot senden → Artikel werden geparsed, Admin bekommt Bestätigung
+- [ ] **Test 1:** Excel als Admin an Bot senden → Artikel werden geparsed
 - [ ] **Test 2:** WebApp öffnen → Artikel sichtbar, Kategorien korrekt
 - [ ] **Test 3:** Bestellung aufgeben → Token + Bestätigung per Telegram
 - [ ] **Test 4:** Bearbeitungslink klicken → Bestellung laden + ändern
 - [ ] **Test 5:** Workflow 04 manuell triggern → Excel-Auswertung an Admin
 - [ ] **Test 6:** Nach Bestellschluss → WebApp zeigt "Offline"-Banner
 
-### Phase 5: Aufräumen vor Release
-- [ ] ZIP-Dateien (`files.zip`, `files2.zip`) aus Repo entfernen
-- [ ] Cron-Zeitzone prüfen: `0 20 * * 3` = Mi 20:00 UTC → ggf. auf CET anpassen (= `0 19 * * 3` im Winter, `0 18 * * 3` im Sommer)
-- [ ] WebApp auf stabile URL deployen (eigene Domain oder Netlify mit Custom Domain)
-- [ ] CLAUDE.md mit finalen URLs aktualisieren
-- [ ] Finaler Git-Commit + Push
-
 ### Nice-to-Have (nach Release)
 - [ ] Admin-Dashboard (Bestellübersicht, Status-Tracking)
 - [ ] Käufer-Verwaltung per Bot-Befehle (`/add_buyer`, `/remove_buyer`)
-- [ ] Token-Ablauf (Tokens sollen nach Bestellschluss automatisch ungültig werden)
-- [ ] Bessere Fehlerbehandlung bei ungültigen Excel-Dateien
-- [ ] Backup-System für Bestelldaten (täglich nach Cloud)
+- [ ] Backup-System für Bestelldaten
 - [ ] Rate-Limiting für Webhook-Endpunkte
-
----
-
-## Datenaustausch zwischen Workflows
-
-Die Workflows kommunizieren über eine **gemeinsame JSON-Datei** (nicht Static Data, da diese pro Workflow isoliert ist):
-
-**Datei:** `/tmp/yauno_data.json` (muss auf persistenten Pfad geändert werden!)
-
-```javascript
-{
-  artikel: [{ id, name, einheit, preis, kategorie }],   // aus Excel geparst (WF 01 schreibt)
-  bestellungen: { [chat_id]: { ...bestellung, token } }, // alle Bestellungen (WF 03 schreibt)
-  tokens: { [token]: chat_id },                          // Token → Chat-ID Mapping (WF 03 schreibt)
-  bestellung_aktiv: true/false,                          // Bestellfenster offen? (WF 01/04 schreibt)
-  kaeufer: [chat_id, ...],                               // registrierte Käufer (WF 03 schreibt)
-  angebot_datum: "18.02.26"                              // Lieferdatum (WF 01 schreibt)
-}
-```
-
-**Wer liest/schreibt was:**
-| Workflow | Liest | Schreibt |
-|----------|-------|----------|
-| 01 - Excel Import | kaeufer | artikel, bestellung_aktiv, angebot_datum (reset: bestellungen, tokens) |
-| 02 - Artikel API | artikel, bestellung_aktiv, angebot_datum | – |
-| 03 - Bestellung | bestellungen, tokens, kaeufer, bestellung_aktiv | bestellungen, tokens, kaeufer |
-| 04 - Abschluss | bestellungen, artikel, angebot_datum | bestellung_aktiv (reset: bestellungen, tokens) |
-| 05 - Get Order | bestellungen, tokens | – |
-
-**Voraussetzung:** n8n Umgebungsvariable `NODE_FUNCTION_ALLOW_BUILTIN=fs` muss gesetzt sein.
 
 ---
 
@@ -176,7 +168,44 @@ Zeile 9+:   Datenzeilen:
 Sonderzeilen:
   "Tagesangebote:" → Kategorie wechselt zu "Tagesangebote"
   "Gesamt zu zahlen:" → Dateiende
+
+Wenn keine "Tagesangebote:"-Zeile vorhanden ist, werden alle Artikel
+als Kategorie "Allgemein" eingeordnet.
 ```
+
+---
+
+## WebApp Konfiguration
+
+In `webapp/index.html` nur die Base-URL anpassen – die Webhook-Pfade werden automatisch abgeleitet:
+
+```javascript
+const N8N_BASE_URL = 'https://tracker-rubber-animation-accommodations.trycloudflare.com';
+```
+
+**Features:**
+- Artikelliste mit Suche und Kategorie-Filter
+- Mengen-Eingabe mit +/- Buttons
+- Bestellübersicht im Footer
+- Edit-Modus: `?token=xxx` in der URL → grüner BEARBEITEN-Banner
+- Demo-Modus: Automatische Beispieldaten wenn Server nicht erreichbar
+- Offline-Modus: Banner wenn Bestellfenster geschlossen
+
+---
+
+## Bekannte offene Punkte
+
+1. **HTTPS für Telegram Webhook fehlt** – n8n läuft auf HTTP. Lösung: Cloudflare Tunnel
+   ```bash
+   cloudflared tunnel --url http://localhost:5678
+   ```
+   Dann die generierte URL als `N8N_BASE_URL` Umgebungsvariable setzen und in
+   `webapp/index.html` als `N8N_BASE_URL` eintragen.
+
+2. **Static Data Isolation** – ~~Gelöst!~~ Workflows 01 und 03 bieten jetzt interne
+   Admin-Webhooks an (`/webhook/admin-artikel`, `/webhook/admin-bestellungen`,
+   `/webhook/admin-close`). Die Consumer-Workflows (02, 04, 05) rufen diese
+   per HTTP Request über `$env.N8N_BASE_URL` ab.
 
 ---
 
@@ -191,7 +220,7 @@ Für direkten n8n-Zugriff aus Claude Code heraus – in `.mcp.json` im Projektro
       "command": "npx",
       "args": ["-y", "@illuminaresystems/n8n-mcp-server"],
       "env": {
-        "N8N_HOST": "http://46.225.80.178:5678",
+        "N8N_HOST": "https://tracker-rubber-animation-accommodations.trycloudflare.com",
         "N8N_API_KEY": "DEIN_N8N_API_KEY"
       }
     },
@@ -207,13 +236,46 @@ Für direkten n8n-Zugriff aus Claude Code heraus – in `.mcp.json` im Projektro
 ### n8n API Key erstellen
 In n8n: **Settings → API → Create API Key** → Key in `.mcp.json` eintragen.
 
+### Mit MCP kannst du dann direkt:
+- Workflows lesen und bearbeiten ohne JSON manuell zu editieren
+- Workflow-Executions einsehen (Fehleranalyse)
+- Nodes suchen und updaten
+- Webhooks testen
+
+---
+
+## Typische Aufgaben für Claude Code
+
+### Workflow debuggen
+```
+Schau dir die letzten Executions von Workflow 01 an und erkläre warum der
+Telegram Trigger fehlschlägt.
+```
+
+### WebApp updaten
+```
+In webapp/index.html: Trage die korrekten n8n Webhook-URLs ein und
+stelle sicher dass der Edit-Modus korrekt funktioniert wenn ?token=
+in der URL steht.
+```
+
+### Neues Feature
+```
+Füge in Workflow 03 eine Validierung hinzu: Wenn ein Käufer mehr als
+50 Einheiten eines einzelnen Artikels bestellt, soll eine Warnung
+per Telegram an den Admin gesendet werden.
+```
+
+### Excel-Parser verbessern
+```
+Der Excel-Parser in Workflow 01 (Code-Node "Artikel extrahieren")
+soll auch mit Dateien umgehen können wo die Tagesangebote-Zeile
+fehlt – dann alle Artikel als Kategorie "Allgemein" einordnen.
+```
+
 ---
 
 ## Wichtige Hinweise
-
-- **Shared Data statt Static Data**: Alle Workflows nutzen `require('fs')` um eine
-  gemeinsame JSON-Datei zu lesen/schreiben. Static Data ist pro Workflow isoliert
-  und funktioniert NICHT für den Datenaustausch zwischen Workflows.
 
 - **Token-Logik**: Token wird beim ersten Bestellen generiert und bleibt
   die ganze Woche erhalten. Bei Änderungen wird der gleiche Token wiederverwendet.
@@ -225,9 +287,9 @@ In n8n: **Settings → API → Create API Key** → Key in `.mcp.json` eintragen
 - **Bearbeiten-Modus**: WebApp erkennt `?token=xxx` in der URL und lädt
   die gespeicherte Bestellung → grüner BEARBEITEN-Banner erscheint.
 
-- **Admin Chat ID**: `1121266642` – hardcoded in Workflows 01, 03, 04.
+- **Mengenwarnung**: Workflow 03 prüft ob ein Käufer mehr als 50 Einheiten
+  eines Artikels bestellt und sendet eine Warnung an den Admin.
 
-- **Webhook-Pfade in n8n**:
-  - `GET /webhook/artikel` → Workflow 02
-  - `POST /webhook/bestellung` → Workflow 03
-  - `GET /webhook/bestellung?token=xxx` → Workflow 05
+- **Käufer-Registrierung**: Käufer werden automatisch bei der ersten
+  Bestellung in der `kaeufer`-Liste registriert und bei neuen Angeboten
+  per Telegram benachrichtigt.
