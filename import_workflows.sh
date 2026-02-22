@@ -2,8 +2,8 @@
 # ============================================
 # Yauno Bestellsystem – n8n Workflow Import
 # ============================================
-# Dieses Script importiert alle 5 Workflows
-# in deine n8n-Instanz und aktiviert sie.
+# Importiert den kompletten Workflow (alles in einem)
+# in deine n8n-Instanz.
 #
 # Ausführen auf dem n8n-Server:
 #   chmod +x import_workflows.sh
@@ -42,100 +42,50 @@ if [ "$HTTP_CODE" != "200" ]; then
 fi
 echo -e "${GREEN}OK${NC}"
 
-# Funktion: Workflow importieren
-import_workflow() {
-  local FILE="$1"
-  local NAME="$2"
-
-  if [ ! -f "$FILE" ]; then
-    echo -e "  ${RED}✗${NC} Datei nicht gefunden: $FILE"
-    return 1
-  fi
-
-  # tags und staticData entfernen (read-only in n8n API)
-  CLEAN_JSON=$(python3 -c "
-import json, sys
-with open('$FILE') as f:
-    wf = json.load(f)
-wf.pop('tags', None)
-wf.pop('staticData', None)
-print(json.dumps(wf))
-" 2>/dev/null || cat "$FILE" | sed 's/"tags":\[[^]]*\],\?//g' | sed 's/"staticData":{[^}]*},\?//g')
-
-  # Workflow erstellen via API
-  RESPONSE=$(curl -s -w "\n%{http_code}" \
-    -X POST \
-    -H "X-N8N-API-KEY: $API_KEY" \
-    -H "Content-Type: application/json" \
-    -d "$CLEAN_JSON" \
-    "$N8N_URL/api/v1/workflows" 2>/dev/null)
-
-  HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-  BODY=$(echo "$RESPONSE" | sed '$d')
-
-  if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
-    # Workflow-ID extrahieren
-    WF_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-
-    if [ -n "$WF_ID" ]; then
-      # Workflow aktivieren
-      ACTIVATE_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-        -X PATCH \
-        -H "X-N8N-API-KEY: $API_KEY" \
-        -H "Content-Type: application/json" \
-        -d '{"active": true}' \
-        "$N8N_URL/api/v1/workflows/$WF_ID" 2>/dev/null)
-
-      if [ "$ACTIVATE_CODE" = "200" ]; then
-        echo -e "  ${GREEN}✓${NC} $NAME (ID: $WF_ID) – importiert & aktiviert"
-      else
-        echo -e "  ${YELLOW}⚠${NC} $NAME (ID: $WF_ID) – importiert, aber Aktivierung fehlgeschlagen (HTTP $ACTIVATE_CODE)"
-      fi
-    else
-      echo -e "  ${GREEN}✓${NC} $NAME – importiert"
-    fi
-    return 0
-  else
-    echo -e "  ${RED}✗${NC} $NAME – Fehler (HTTP $HTTP_CODE)"
-    echo "    $BODY" | head -3
-    return 1
-  fi
-}
-
-# Workflows importieren
-echo ""
-echo "Importiere Workflows..."
-echo ""
-
+# Workflow-Datei
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-WF_DIR="$SCRIPT_DIR/workflows"
+WF_FILE="$SCRIPT_DIR/workflows/workflow_komplett.json"
 
-if [ ! -d "$WF_DIR" ]; then
-  echo -e "${RED}FEHLER:${NC} Ordner 'workflows/' nicht gefunden!"
-  echo "Stelle sicher, dass das Script im Projektverzeichnis liegt."
+if [ ! -f "$WF_FILE" ]; then
+  echo -e "${RED}FEHLER:${NC} workflow_komplett.json nicht gefunden!"
   exit 1
 fi
 
-ERRORS=0
-
-import_workflow "$WF_DIR/workflow_01_excel_import.json"    "01 - Excel Import & Benachrichtigung" || ((ERRORS++))
-import_workflow "$WF_DIR/workflow_02_artikel_api.json"      "02 - Artikel API"                      || ((ERRORS++))
-import_workflow "$WF_DIR/workflow_03_bestellung_v2.json"    "03 - Bestellung speichern"              || ((ERRORS++))
-import_workflow "$WF_DIR/workflow_04_abschluss.json"        "04 - Bestellschluss & Auswertung"       || ((ERRORS++))
-import_workflow "$WF_DIR/workflow_05_get_order.json"        "05 - Bestellung laden (Token)"          || ((ERRORS++))
-
 echo ""
-echo "=========================================="
-if [ $ERRORS -eq 0 ]; then
-  echo -e "${GREEN}Alle 5 Workflows erfolgreich importiert!${NC}"
+echo "Importiere Yauno Bestellsystem (Komplett-Workflow)..."
+echo ""
+
+# Workflow erstellen via API
+RESPONSE=$(curl -s -w "\n%{http_code}" \
+  -X POST \
+  -H "X-N8N-API-KEY: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d @"$WF_FILE" \
+  "$N8N_URL/api/v1/workflows" 2>/dev/null)
+
+HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+BODY=$(echo "$RESPONSE" | sed '$d')
+
+if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+  WF_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+  echo -e "  ${GREEN}✓${NC} Yauno Bestellsystem (ID: $WF_ID) – importiert"
+  echo ""
+  echo "=========================================="
+  echo -e "${GREEN}Import erfolgreich!${NC}"
+  echo "=========================================="
+  echo ""
+  echo "Nächste Schritte:"
+  echo "  1. Öffne n8n: http://46.225.80.178:5678"
+  echo "  2. Öffne den Workflow 'Yauno Bestellsystem'"
+  echo "  3. Aktiviere den Workflow (Toggle oben rechts)"
+  echo "  4. Stelle sicher dass 'Telegram account' Credentials existieren"
+  echo "  5. Teste: Sende eine Excel-Datei an den Bot"
 else
-  echo -e "${YELLOW}$ERRORS Workflow(s) fehlgeschlagen.${NC}"
+  echo -e "  ${RED}✗${NC} Import fehlgeschlagen (HTTP $HTTP_CODE)"
+  echo "  $BODY" | head -5
+  echo ""
+  echo "=========================================="
+  echo -e "${RED}Import fehlgeschlagen.${NC}"
+  echo "=========================================="
 fi
-echo "=========================================="
-echo ""
-echo "Nächste Schritte:"
-echo "  1. Öffne n8n: http://46.225.80.178:5678"
-echo "  2. Prüfe ob alle Workflows aktiv sind"
-echo "  3. Stelle sicher dass 'Telegram account' Credentials existieren"
-echo "  4. Teste: Sende eine Excel-Datei an den Bot"
 echo ""
