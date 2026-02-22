@@ -117,7 +117,7 @@
       "name": "Artikel extrahieren",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1520, 240]
+      "position": [1620, 240]
     },
     {
       "parameters": {
@@ -229,6 +229,20 @@
     },
     {
       "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_BASE_URL }}/webhook/admin-close",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "reset-orders",
+      "name": "Alte Bestellungen löschen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1400, 240]
+    },
+    {
+      "parameters": {
         "httpMethod": "GET",
         "path": "admin-artikel",
         "responseMode": "responseNode",
@@ -293,6 +307,9 @@
       "main": [[{ "node": "Excel zu JSON", "type": "main", "index": 0 }]]
     },
     "Excel zu JSON": {
+      "main": [[{ "node": "Alte Bestellungen löschen", "type": "main", "index": 0 }]]
+    },
+    "Alte Bestellungen löschen": {
       "main": [[{ "node": "Artikel extrahieren", "type": "main", "index": 0 }]]
     },
     "Artikel extrahieren": {
