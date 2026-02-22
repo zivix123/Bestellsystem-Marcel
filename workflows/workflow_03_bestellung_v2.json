@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// POST: Bestellung speichern\nconst body = $input.first().json.body || $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\n\n// Prüfe ob Bestellung aktiv\nif (staticData.bestellung_aktiv === false) {\n  return [{ json: { error: 'Bestellfenster geschlossen', status: 403 } }];\n}\n\nconst chatId = body.chatId;\nif (!chatId) {\n  return [{ json: { error: 'Chat-ID fehlt', status: 400 } }];\n}\n\n// Token generieren oder bestehenden verwenden\nlet token = body.token;\nconst bestellungen = staticData.bestellungen || {};\nconst tokens = staticData.tokens || {};\n\nif (!token || !tokens[token]) {\n  // Neuen Token generieren\n  token = 'ord_' + Math.random().toString(36).substr(2, 12) + Date.now().toString(36);\n}\n\n// Bestellung speichern\nbestellungen[chatId] = {\n  chatId: chatId,\n  userName: body.userName || 'Unbekannt',\n  positionen: body.positionen || [],\n  gesamtpreis: body.gesamtpreis || 0,\n  token: token,\n  zeitpunkt: body.zeitpunkt || new Date().toISOString(),\n  aktualisiert: new Date().toISOString()\n};\n\ntokens[token] = chatId;\n\n// Käufer registrieren (wenn noch nicht vorhanden)\nconst kaeufer = staticData.kaeufer || [];\nif (!kaeufer.includes(String(chatId))) {\n  kaeufer.push(String(chatId));\n}\n\nstaticData.bestellungen = bestellungen;\nstaticData.tokens = tokens;\nstaticData.kaeufer = kaeufer;\n\nconst isUpdate = !!body.token;\n\n// Prüfe auf ungewöhnlich hohe Mengen (>50 Einheiten)\nconst highQtyItems = (body.positionen || []).filter(p => p.menge > 50);\n\nreturn [{ json: {\n  success: true,\n  token: token,\n  chatId: String(chatId),\n  userName: body.userName,\n  gesamtpreis: body.gesamtpreis,\n  isUpdate: isUpdate,\n  highQtyWarning: highQtyItems.length > 0,\n  highQtyItems: highQtyItems.map(p => p.name + ' (' + p.menge + 'x)').join(', '),\n  status: 200\n}}];"
+        "jsCode": "// POST: Bestellung speichern\nconst body = $input.first().json.body || $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\n\n// Prüfe ob Bestellung aktiv\nif (staticData.bestellung_aktiv === false) {\n  return [{ json: { error: 'Bestellfenster geschlossen', status: 403 } }];\n}\n\nconst chatId = body.chatId;\nif (!chatId) {\n  return [{ json: { error: 'Chat-ID fehlt', status: 400 } }];\n}\n\n// Token generieren oder bestehenden verwenden\nlet token = body.token;\nconst bestellungen = staticData.bestellungen || {};\nconst tokens = staticData.tokens || {};\n\nif (!token || !tokens[token]) {\n  // Neuen Token generieren\n  token = 'ord_' + Math.random().toString(36).substr(2, 12) + Date.now().toString(36);\n}\n\n// Bestellung speichern\nbestellungen[chatId] = {\n  chatId: chatId,\n  userName: body.userName || 'Unbekannt',\n  positionen: body.positionen || [],\n  gesamtpreis: body.gesamtpreis || 0,\n  token: token,\n  zeitpunkt: body.zeitpunkt || new Date().toISOString(),\n  aktualisiert: new Date().toISOString()\n};\n\ntokens[token] = chatId;\n\n// Käufer registrieren (wenn noch nicht vorhanden)\nconst kaeufer = staticData.kaeufer || [];\nif (!kaeufer.includes(String(chatId))) {\n  kaeufer.push(String(chatId));\n}\n\nstaticData.bestellungen = bestellungen;\nstaticData.tokens = tokens;\nstaticData.kaeufer = kaeufer;\n\nconst isUpdate = !!body.token;\n\n// Prüfe auf ungewöhnlich hohe Mengen (>50 Einheiten)\nconst highQtyItems = (body.positionen || []).filter(p => p.menge > 50);\n\nreturn [{ json: {\n  success: true,\n  token: token,\n  chatId: String(chatId),\n  userName: body.userName,\n  gesamtpreis: body.gesamtpreis,\n  isUpdate: isUpdate,\n  highQtyWarning: highQtyItems.length > 0,\n  highQtyItems: highQtyItems.map(p => p.name + ' (' + p.menge + 'x)').join(', '),\n  webapp_url: staticData.webapp_url || 'https://jade-alfajores-4f3440.netlify.app',\n  status: 200\n}}];"
       },
       "id": "save-order",
       "name": "Bestellung speichern",
@@ -84,7 +84,7 @@
                     {
                       "text": "✏️ Bestellung bearbeiten",
                       "additionalFields": {
-                        "url": "={{ $env.WEBAPP_URL }}?token={{ $json.token }}"
+                        "url": "={{ $json.webapp_url }}?token={{ $json.token }}"
                       }
                     }
                   ]
@@ -225,7 +225,8 @@
       "bestellungen": {},
       "tokens": {},
       "kaeufer": [],
-      "bestellung_aktiv": true
+      "bestellung_aktiv": true,
+      "webapp_url": "https://jade-alfajores-4f3440.netlify.app"
     }
   },
   "tags": [{ "name": "Yauno" }]

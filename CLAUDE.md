@@ -48,10 +48,10 @@ Telegram Bot:   Credential "Telegram account" in n8n
 Admin Chat ID:  1121266642
 ```
 
-**n8n Umgebungsvariable:**
-Die WebApp-URL wird zentral über die n8n Variable `WEBAPP_URL` gepflegt.
-Workflows 01 und 03 verwenden `{{ $env.WEBAPP_URL }}` statt einer hardcoded URL.
-Setzen unter: **n8n → Settings → Variables → `WEBAPP_URL`**
+**WebApp-URL zentral verwaltet:**
+Die WebApp-URL wird über `staticData.webapp_url` in der globalen Static Data gepflegt.
+Workflows 01 und 03 lesen die URL aus der Static Data und geben sie an die Telegram-Buttons weiter.
+Ändern unter: **n8n → Workflow 01 → Settings → Static Data → `webapp_url`**
 
 ---
 
@@ -78,7 +78,8 @@ Die Workflows kommunizieren über `$getWorkflowStaticData('global')`:
   tokens: { [token]: chat_id },                          // Token → Chat-ID Mapping
   bestellung_aktiv: true/false,                          // Bestellfenster offen?
   kaeufer: [chat_id, ...],                               // registrierte Käufer
-  angebot_datum: "18.02.26"                              // Lieferdatum
+  angebot_datum: "18.02.26",                             // Lieferdatum
+  webapp_url: "https://..."                              // WebApp-URL (zentral gepflegt)
 }
 ```
 

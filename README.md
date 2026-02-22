@@ -71,17 +71,18 @@ Die generierte `https://xxx.trycloudflare.com` URL dann:
 
 ---
 
-## 5. n8n Umgebungsvariable setzen
+## 5. WebApp-URL zentral konfigurieren
 
-Die Workflows verwenden eine Umgebungsvariable für die WebApp-URL. So musst du die URL nur an **einer Stelle** pflegen:
+Die WebApp-URL wird über die **Static Data** der Workflows verwaltet. So musst du sie nur an **einer Stelle** ändern:
 
-In n8n: **Settings → Variables** → Neue Variable anlegen:
+1. In n8n: Workflow **01** öffnen → **Settings** (Zahnrad) → **Static Data**
+2. Im JSON den Wert von `webapp_url` anpassen:
+   ```json
+   "webapp_url": "https://deine-app.netlify.app"
+   ```
+3. Speichern – Workflow 03 liest die URL automatisch aus der geteilten Static Data.
 
-| Variable | Wert |
-|----------|------|
-| `WEBAPP_URL` | `https://deine-app.netlify.app` |
-
-Die Workflows greifen dann per `{{ $env.WEBAPP_URL }}` darauf zu.
+> Falls die Workflows separate Static Data verwenden, muss `webapp_url` auch in Workflow 03 angepasst werden.
 
 ---
 
@@ -105,7 +106,7 @@ Für jeden Workflow in `workflows/`:
 | 04 | workflow_04_abschluss.json | Bestellschluss + Excel | Cron Mi 20:00 |
 | 05 | workflow_05_get_order.json | Bestellung laden (Edit) | GET Webhook |
 
-> **Hinweis:** Die Workflows 01 und 03 verwenden `$env.WEBAPP_URL` für die WebApp-URL. Stelle sicher, dass die Variable in Schritt 5 korrekt gesetzt ist.
+> **Hinweis:** Die Workflows 01 und 03 verwenden `webapp_url` aus der Static Data für die WebApp-URL. Stelle sicher, dass die URL in Schritt 5 korrekt gesetzt ist.
 
 ---
 
