@@ -198,11 +198,9 @@ echo "$NEW_ID" > "$ID_FILE"
 # ============================================
 echo -n "4. Aktiviere Workflow... "
 ACTIVATE_RESPONSE=$(curl -s -w "\n%{http_code}" \
-  -X PATCH \
+  -X POST \
   -H "X-N8N-API-KEY: $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"active": true}' \
-  "$N8N_URL/api/v1/workflows/$NEW_ID" 2>/dev/null)
+  "$N8N_URL/api/v1/workflows/$NEW_ID/activate" 2>/dev/null)
 
 ACT_CODE=$(echo "$ACTIVATE_RESPONSE" | tail -1)
 ACT_BODY=$(echo "$ACTIVATE_RESPONSE" | sed '$d')
