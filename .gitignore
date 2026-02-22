@@ -1,2 +1,5 @@
 # MCP config (enthält API Keys)
 .mcp.json
+
+# Deploy-Script mit API-Key nicht committen
+deploy_to_n8n.ps1

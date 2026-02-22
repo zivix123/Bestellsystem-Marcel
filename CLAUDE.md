@@ -30,7 +30,7 @@ Du arbeitest am **Yauno Lebensmittel Bestellsystem** – einem vollautomatischen
 │   ├── workflow_02_artikel_api.json        # GET /webhook/artikel → Artikelliste
 │   ├── workflow_03_bestellung_v2.json      # POST /webhook/bestellung → Bestellung speichern
 │   ├── workflow_04_abschluss.json          # Cron Mi 20:00 → Bestellschluss + Excel
-│   └── workflow_05_get_order.json          # GET /webhook/bestellung-get?token= → Bestellung laden
+│   └── workflow_05_get_order.json          # GET /webhook/bestellung-get → Bestellung laden
 ├── webapp/
 │   └── index.html                          # Telegram Mini WebApp (Vanilla JS)
 ├── README.md                               # Setup-Anleitung
@@ -101,6 +101,55 @@ auf die Daten zugreifen:
 - **WF 01** → `GET /webhook/admin-artikel` (Artikeldaten, Bestellstatus, Datum)
 - **WF 03** → `GET /webhook/admin-bestellungen` (alle Bestellungen, Tokens)
 - **WF 03** → `POST /webhook/admin-close` (Bestellfenster schließen, Daten bereinigen)
+
+---
+
+## Aktueller Stand & erledigte Aufgaben
+
+### Erledigt:
+- [x] Alle 5 Workflows erstellt und logisch korrekt
+- [x] `ADMIN_CHAT_ID_HIER` Platzhalter durch `1121266642` ersetzt (WF 01, 03, 04)
+- [x] Static Data Isolation gelöst: Interne Admin-Webhooks für Cross-Workflow-Kommunikation
+- [x] Workflow 03: httpMethod Bug gefixt (POST statt dynamisch), GET-Branch entfernt
+- [x] WebApp (index.html) vollständig: Bestellung, Bearbeiten-Modus, Demo-Modus, Suche
+- [x] Mengenwarnung: WF 03 prüft auf >50 Einheiten und warnt Admin
+- [x] Käufer-Registrierung: Automatisch bei erster Bestellung
+- [x] Projektstruktur: workflows/ und webapp/ Ordner
+- [x] Projekt auf GitHub gepusht (zivix123/Bestellsystem-Marcel)
+
+---
+
+## Release-Plan: Offene Aufgaben
+
+### Phase 1: HTTPS einrichten (BLOCKER – ohne das kein Telegram Bot)
+- [ ] Cloudflare Tunnel auf Server installieren:
+  ```bash
+  cloudflared tunnel --url http://localhost:5678
+  ```
+- [ ] Permanente Tunnel-URL erhalten (oder `cloudflared tunnel create` für stabile URL)
+- [ ] Tunnel-URL als `N8N_BASE_URL` Umgebungsvariable setzen
+- [ ] Webhook-URL in `webapp/index.html` als `N8N_BASE_URL` eintragen
+
+### Phase 2: Telegram Bot einrichten
+- [ ] Bot-Token über @BotFather erstellen (falls nicht vorhanden)
+- [ ] Telegram Credential in n8n einrichten: Settings → Credentials → Telegram API
+- [ ] Credential-ID in allen Telegram-Nodes prüfen (aktuell: ID "1", Name "Telegram account")
+
+### Phase 3: Workflows deployen & testen
+- [ ] Alle 5 Workflows in n8n importieren
+- [ ] Alle Workflows aktivieren
+- [ ] **Test 1:** Excel als Admin an Bot senden → Artikel werden geparsed
+- [ ] **Test 2:** WebApp öffnen → Artikel sichtbar, Kategorien korrekt
+- [ ] **Test 3:** Bestellung aufgeben → Token + Bestätigung per Telegram
+- [ ] **Test 4:** Bearbeitungslink klicken → Bestellung laden + ändern
+- [ ] **Test 5:** Workflow 04 manuell triggern → Excel-Auswertung an Admin
+- [ ] **Test 6:** Nach Bestellschluss → WebApp zeigt "Offline"-Banner
+
+### Nice-to-Have (nach Release)
+- [ ] Admin-Dashboard (Bestellübersicht, Status-Tracking)
+- [ ] Käufer-Verwaltung per Bot-Befehle (`/add_buyer`, `/remove_buyer`)
+- [ ] Backup-System für Bestelldaten
+- [ ] Rate-Limiting für Webhook-Endpunkte
 
 ---
 
