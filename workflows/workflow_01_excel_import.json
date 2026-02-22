@@ -226,6 +226,48 @@
           "name": "Telegram account"
         }
       }
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "admin-artikel",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-admin-artikel",
+      "name": "Webhook Admin Artikel",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 600],
+      "webhookId": "admin-artikel"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Admin-Endpoint: Artikeldaten für andere Workflows bereitstellen\nconst staticData = $getWorkflowStaticData('global');\nreturn [{ json: {\n  artikel: staticData.artikel || [],\n  bestellung_aktiv: staticData.bestellung_aktiv !== false,\n  angebot_datum: staticData.angebot_datum || '',\n  kaeufer: staticData.kaeufer || [],\n  webapp_url: staticData.webapp_url || 'https://jade-alfajores-4f3440.netlify.app'\n}}];"
+      },
+      "id": "admin-artikel-data",
+      "name": "Admin Artikeldaten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 600]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "admin-artikel-respond",
+      "name": "Admin Artikel Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 600]
     }
   ],
   "connections": {
@@ -267,6 +309,12 @@
         [{ "node": "Käufer benachrichtigen", "type": "main", "index": 0 }],
         []
       ]
+    },
+    "Webhook Admin Artikel": {
+      "main": [[{ "node": "Admin Artikeldaten", "type": "main", "index": 0 }]]
+    },
+    "Admin Artikeldaten": {
+      "main": [[{ "node": "Admin Artikel Respond", "type": "main", "index": 0 }]]
     }
   },
   "settings": {

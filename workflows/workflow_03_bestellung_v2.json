@@ -186,6 +186,89 @@
           "name": "Telegram account"
         }
       }
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "admin-bestellungen",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-admin-orders",
+      "name": "Webhook Admin Bestellungen",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 700],
+      "webhookId": "admin-bestellungen"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Admin-Endpoint: Alle Bestelldaten für andere Workflows bereitstellen\nconst staticData = $getWorkflowStaticData('global');\nreturn [{ json: {\n  bestellungen: staticData.bestellungen || {},\n  tokens: staticData.tokens || {},\n  kaeufer: staticData.kaeufer || [],\n  bestellung_aktiv: staticData.bestellung_aktiv !== false\n}}];"
+      },
+      "id": "admin-orders-data",
+      "name": "Admin Bestelldaten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 700]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "admin-orders-respond",
+      "name": "Admin Bestellungen Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 700]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-close",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-admin-close",
+      "name": "Webhook Admin Close",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 900],
+      "webhookId": "admin-close"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Admin-Endpoint: Bestellfenster schließen und Daten bereinigen\nconst staticData = $getWorkflowStaticData('global');\nstaticData.bestellungen = {};\nstaticData.tokens = {};\nstaticData.bestellung_aktiv = false;\n// Käufer bleiben erhalten für nächste Woche\nreturn [{ json: { success: true, message: 'Bestellungen geschlossen und bereinigt' } }];"
+      },
+      "id": "admin-close-data",
+      "name": "Bestellungen schließen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 900]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "admin-close-respond",
+      "name": "Admin Close Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 900]
     }
   ],
   "connections": {
@@ -215,6 +298,18 @@
         [{ "node": "Mengenwarnung an Admin", "type": "main", "index": 0 }],
         []
       ]
+    },
+    "Webhook Admin Bestellungen": {
+      "main": [[{ "node": "Admin Bestelldaten", "type": "main", "index": 0 }]]
+    },
+    "Admin Bestelldaten": {
+      "main": [[{ "node": "Admin Bestellungen Respond", "type": "main", "index": 0 }]]
+    },
+    "Webhook Admin Close": {
+      "main": [[{ "node": "Bestellungen schließen", "type": "main", "index": 0 }]]
+    },
+    "Bestellungen schließen": {
+      "main": [[{ "node": "Admin Close Respond", "type": "main", "index": 0 }]]
     }
   },
   "settings": {

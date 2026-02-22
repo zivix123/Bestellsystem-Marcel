@@ -57,13 +57,16 @@ Workflows 01 und 03 lesen die URL aus der Static Data und geben sie an die Teleg
 
 ## Webhook-Endpunkte
 
-| Workflow | Methode | Pfad (webhookId)       | Beschreibung                    |
-|----------|---------|------------------------|---------------------------------|
-| 01       | —       | Telegram Trigger       | Excel-Datei vom Admin empfangen |
-| 02       | GET     | /webhook/artikel       | Artikelliste für WebApp         |
-| 03       | POST    | /webhook/bestellung    | Bestellung speichern            |
-| 04       | —       | Cron (Mi 20:00)        | Bestellschluss + Auswertung     |
-| 05       | GET     | /webhook/bestellung-get| Bestellung per Token laden      |
+| Workflow | Methode | Pfad (webhookId)         | Beschreibung                      |
+|----------|---------|--------------------------|-----------------------------------|
+| 01       | —       | Telegram Trigger         | Excel-Datei vom Admin empfangen   |
+| 01       | GET     | /webhook/admin-artikel   | Interne API: Artikeldaten lesen   |
+| 02       | GET     | /webhook/artikel         | Artikelliste für WebApp           |
+| 03       | POST    | /webhook/bestellung      | Bestellung speichern              |
+| 03       | GET     | /webhook/admin-bestellungen | Interne API: Bestelldaten lesen |
+| 03       | POST    | /webhook/admin-close     | Interne API: Bestellungen schließen |
+| 04       | —       | Cron (Mi 20:00)          | Bestellschluss + Auswertung       |
+| 05       | GET     | /webhook/bestellung-get  | Bestellung per Token laden        |
 
 ---
 
@@ -83,9 +86,13 @@ Die Workflows kommunizieren über `$getWorkflowStaticData('global')`:
 }
 ```
 
-**Wichtig:** Jeder Workflow hat seine eigene Static Data. Damit die Workflows
-Daten teilen können, müssen alle im selben n8n-Projekt laufen – oder eine
-externe JSON-Datei als gemeinsamen Speicher nutzen.
+**Wichtig:** Jeder Workflow hat seine eigene Static Data (`$getWorkflowStaticData('global')`
+ist pro Workflow isoliert). Die Daten-Workflows (01, 03) stellen interne Admin-Webhooks
+bereit, über die andere Workflows per HTTP Request (`http://localhost:5678/webhook/...`)
+auf die Daten zugreifen:
+- **WF 01** → `GET /webhook/admin-artikel` (Artikeldaten, Bestellstatus, Datum)
+- **WF 03** → `GET /webhook/admin-bestellungen` (alle Bestellungen, Tokens)
+- **WF 03** → `POST /webhook/admin-close` (Bestellfenster schließen, Daten bereinigen)
 
 ---
 
@@ -139,9 +146,10 @@ const WEBHOOK_BESTELLUNG_GET = 'https://conclusion-eminem-excessive-admit.tryclo
    ```
    Dann in n8n: Settings → Webhook URL → Cloudflare-URL eintragen
 
-2. **Static Data Isolation** – Jeder n8n Workflow hat seine eigene Static Data.
-   Workflow 02 und 05 können nicht direkt auf die Daten von Workflow 01/03 zugreifen.
-   Lösung: Alle Workflows im selben Projekt halten, oder externe JSON-Datei nutzen.
+2. **Static Data Isolation** – ~~Gelöst!~~ Workflows 01 und 03 bieten jetzt interne
+   Admin-Webhooks an (`/webhook/admin-artikel`, `/webhook/admin-bestellungen`,
+   `/webhook/admin-close`). Die Consumer-Workflows (02, 04, 05) rufen diese
+   per HTTP Request auf `http://localhost:5678` ab.
 
 ---
 
