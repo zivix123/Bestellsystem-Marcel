@@ -52,12 +52,22 @@ import_workflow() {
     return 1
   fi
 
+  # tags und staticData entfernen (read-only in n8n API)
+  CLEAN_JSON=$(python3 -c "
+import json, sys
+with open('$FILE') as f:
+    wf = json.load(f)
+wf.pop('tags', None)
+wf.pop('staticData', None)
+print(json.dumps(wf))
+" 2>/dev/null || cat "$FILE" | sed 's/"tags":\[[^]]*\],\?//g' | sed 's/"staticData":{[^}]*},\?//g')
+
   # Workflow erstellen via API
   RESPONSE=$(curl -s -w "\n%{http_code}" \
     -X POST \
     -H "X-N8N-API-KEY: $API_KEY" \
     -H "Content-Type: application/json" \
-    -d @"$FILE" \
+    -d "$CLEAN_JSON" \
     "$N8N_URL/api/v1/workflows" 2>/dev/null)
 
   HTTP_CODE=$(echo "$RESPONSE" | tail -1)
