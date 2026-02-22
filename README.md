@@ -17,7 +17,7 @@ Admin lädt Excel hoch → Telegram Bot
 
 ## 1. Voraussetzungen
 
-- **n8n** läuft auf `https://univ-province-validity-jimmy.trycloudflare.com`
+- **n8n** läuft auf `https://yauno-n8n.duckdns.org`
 - **Telegram Bot** erstellt via @BotFather
 - **Netlify** Account (oder alternatives Hosting für die WebApp)
 
