@@ -43,7 +43,7 @@ Du arbeitest am **Yauno Lebensmittel Bestellsystem** – einem vollautomatischen
 n8n URL:        http://46.225.80.178:5678
 WebApp URL:     https://jade-alfajores-4f3440.netlify.app
 Telegram Bot:   Credential "Telegram account" in n8n
-Admin Chat ID:  [DEINE CHAT-ID HIER EINTRAGEN]
+Admin Chat ID:  1121266642
 ```
 
 ---

@@ -76,7 +76,7 @@
     },
     {
       "parameters": {
-        "chatId": "ADMIN_CHAT_ID_HIER",
+        "chatId": "1121266642",
         "text": "=📊 *Bestellschluss – Auswertung*\n\n📅 Lieferdatum: {{ $('Auswertung vorbereiten').item.json.datum }}\n🛒 {{ $('Auswertung vorbereiten').item.json.anzahlBestellungen }} Bestellungen\n💰 Gesamt: €{{ $('Auswertung vorbereiten').item.json.gesamtUmsatz.toFixed(2).replace('.', ',') }}\n\n📎 Excel-Auswertung siehe Anhang ⬇️",
         "additionalFields": {
           "parse_mode": "Markdown"
@@ -97,7 +97,7 @@
     {
       "parameters": {
         "operation": "sendDocument",
-        "chatId": "ADMIN_CHAT_ID_HIER",
+        "chatId": "1121266642",
         "binaryData": true,
         "binaryPropertyName": "data",
         "additionalFields": {
@@ -128,7 +128,7 @@
     },
     {
       "parameters": {
-        "chatId": "ADMIN_CHAT_ID_HIER",
+        "chatId": "1121266642",
         "text": "📭 Bestellschluss – Keine Bestellungen diese Woche eingegangen.",
         "additionalFields": {}
       },
