@@ -28,7 +28,7 @@
           "combinator": "and",
           "conditions": [
             {
-              "leftValue": "={{ $json.message.document.mime_type }}",
+              "leftValue": "={{ $json.message?.document?.mime_type ?? '' }}",
               "rightValue": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
               "operator": { "type": "string", "operation": "equals" }
             }
