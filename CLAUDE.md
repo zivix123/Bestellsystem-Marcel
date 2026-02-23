@@ -133,18 +133,26 @@ Der Workflow ist in 5 logische Bereiche unterteilt:
 - [x] Käufer-Registrierung: Automatisch bei erster Bestellung
 - [x] Import/Update-Skripte: Nutzen Umgebungsvariablen (keine hartcodierten API-Keys)
 - [x] Projekt auf GitHub gepusht (zivix123/Bestellsystem-Marcel)
+- [x] Feste URL: `yauno-n8n.duckdns.org` in allen Dateien eingetragen
+- [x] Einzel-Workflows entfernt, nur noch `workflow_komplett.json`
 
 ---
 
 ## Release-Plan: Offene Aufgaben
 
 ### Phase 1: HTTPS einrichten (BLOCKER – ohne das kein Telegram Bot)
-- [ ] Cloudflare Tunnel auf Server installieren:
+- [x] DuckDNS-Domain eingerichtet: `yauno-n8n.duckdns.org`
+- [x] URL in allen Projektdateien eingetragen
+- [ ] Caddy als Reverse Proxy auf dem Server installieren:
   ```bash
-  cloudflared tunnel --url http://localhost:5678
+  sudo apt install -y caddy
+  # /etc/caddy/Caddyfile:
+  # yauno-n8n.duckdns.org {
+  #     reverse_proxy localhost:5678
+  # }
+  sudo systemctl enable --now caddy
   ```
-- [ ] Permanente Tunnel-URL erhalten (oder `cloudflared tunnel create` für stabile URL)
-- [ ] Webhook-URL in `webapp/index.html` als `N8N_BASE_URL` eintragen
+- [ ] Pruefen: `https://yauno-n8n.duckdns.org` erreichbar + HTTPS-Zertifikat aktiv
 
 ### Phase 2: Telegram Bot einrichten
 - [ ] Bot-Token über @BotFather erstellen (falls nicht vorhanden)
@@ -216,11 +224,9 @@ const N8N_BASE_URL = 'https://yauno-n8n.duckdns.org';
 
 ## Bekannte offene Punkte
 
-1. **HTTPS für Telegram Webhook fehlt** – n8n läuft auf HTTP. Lösung: Cloudflare Tunnel
-   ```bash
-   cloudflared tunnel --url http://localhost:5678
-   ```
-   Dann die generierte URL in `webapp/index.html` als `N8N_BASE_URL` eintragen.
+1. **HTTPS auf dem Server einrichten** – Caddy als Reverse Proxy installieren,
+   damit `https://yauno-n8n.duckdns.org` mit gueltigem Zertifikat erreichbar ist.
+   Port 80 + 443 muessen offen sein (fuer Let's Encrypt).
 
 ---
 
