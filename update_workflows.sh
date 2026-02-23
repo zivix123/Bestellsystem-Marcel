@@ -7,7 +7,7 @@
 # Bestehende andere Workflows werden NICHT angetastet.
 #
 # Voraussetzungen:
-#   export N8N_BASE_URL="https://deine-url.trycloudflare.com"
+#   export N8N_BASE_URL="https://yauno-n8n.duckdns.org"
 #   export N8N_API_KEY="dein-api-key"
 #
 # Ausfuehren:

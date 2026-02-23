@@ -4,7 +4,7 @@
       "command": "npx",
       "args": ["-y", "@illuminaresystems/n8n-mcp-server"],
       "env": {
-        "N8N_HOST": "https://DEINE-URL.trycloudflare.com",
+        "N8N_HOST": "https://yauno-n8n.duckdns.org",
         "N8N_API_KEY": "DEIN_N8N_API_KEY"
       }
     },

@@ -47,7 +47,7 @@ zwischen Workflows nötig.
 ## Konfiguration (aktuelle Werte)
 
 ```
-n8n URL:        https://tracker-rubber-animation-accommodations.trycloudflare.com
+n8n URL:        https://yauno-n8n.duckdns.org
 WebApp URL:     https://jade-alfajores-4f3440.netlify.app
 Telegram Bot:   Credential "Telegram account" in n8n (ID: "1")
 Admin Chat ID:  1121266642
@@ -155,7 +155,7 @@ Der Workflow ist in 5 logische Bereiche unterteilt:
 - [ ] Workflow in n8n importieren:
   ```bash
   export N8N_API_KEY="dein-key"
-  export N8N_BASE_URL="https://deine-url.trycloudflare.com"
+  export N8N_BASE_URL="https://yauno-n8n.duckdns.org"
   ./import_workflows.sh
   ```
 - [ ] Workflow aktivieren (Toggle oben rechts in n8n)
@@ -201,7 +201,7 @@ als Kategorie "Allgemein" eingeordnet.
 In `webapp/index.html` nur die Base-URL anpassen – die Webhook-Pfade werden automatisch abgeleitet:
 
 ```javascript
-const N8N_BASE_URL = 'https://tracker-rubber-animation-accommodations.trycloudflare.com';
+const N8N_BASE_URL = 'https://yauno-n8n.duckdns.org';
 ```
 
 **Features:**
@@ -229,14 +229,14 @@ const N8N_BASE_URL = 'https://tracker-rubber-animation-accommodations.trycloudfl
 ### Workflow importieren (erstmalig)
 ```bash
 export N8N_API_KEY="dein-api-key"
-export N8N_BASE_URL="https://deine-url.trycloudflare.com"
+export N8N_BASE_URL="https://yauno-n8n.duckdns.org"
 ./import_workflows.sh
 ```
 
 ### Workflow aktualisieren (nach Änderungen)
 ```bash
 export N8N_API_KEY="dein-api-key"
-export N8N_BASE_URL="https://deine-url.trycloudflare.com"
+export N8N_BASE_URL="https://yauno-n8n.duckdns.org"
 ./update_workflows.sh
 ```
 
