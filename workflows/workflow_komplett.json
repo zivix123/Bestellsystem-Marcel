@@ -70,7 +70,13 @@
       "name": "Get File Path",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [860, 240]
+      "position": [860, 240],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram account"
+        }
+      }
     },
     {
       "parameters": {
@@ -87,7 +93,13 @@
       "name": "Download Excel",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1080, 240]
+      "position": [1080, 240],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram account"
+        }
+      }
     },
     {
       "parameters": {
