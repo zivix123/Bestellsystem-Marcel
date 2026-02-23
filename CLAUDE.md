@@ -42,7 +42,7 @@ Du arbeitest am **Yauno Lebensmittel Bestellsystem** – einem vollautomatischen
 ## Konfiguration (aktuelle Werte)
 
 ```
-n8n URL:        https://tracker-rubber-animation-accommodations.trycloudflare.com
+n8n URL:        https://yauno-n8n.duckdns.org
 WebApp URL:     https://jade-alfajores-4f3440.netlify.app
 Telegram Bot:   Credential "Telegram account" in n8n
 Admin Chat ID:  1121266642
@@ -52,7 +52,7 @@ Admin Chat ID:  1121266642
 Die Workflows 02, 04 und 05 lesen die n8n-URL aus der Umgebungsvariable `N8N_BASE_URL`.
 Beim Docker-Start setzen:
 ```bash
-docker run -e N8N_BASE_URL=https://tracker-rubber-animation-accommodations.trycloudflare.com ...
+docker run -e N8N_BASE_URL=https://yauno-n8n.duckdns.org ...
 ```
 Wenn sich die Cloudflare-Tunnel-URL ändert, muss nur diese eine Variable angepasst werden.
 
@@ -96,7 +96,7 @@ Die Workflows kommunizieren über `$getWorkflowStaticData('global')`:
 
 **Wichtig:** Jeder Workflow hat seine eigene Static Data (`$getWorkflowStaticData('global')`
 ist pro Workflow isoliert). Die Daten-Workflows (01, 03) stellen interne Admin-Webhooks
-bereit, über die andere Workflows per HTTP Request (`https://tracker-rubber-animation-accommodations.trycloudflare.com/webhook/...`)
+bereit, über die andere Workflows per HTTP Request (`https://yauno-n8n.duckdns.org/webhook/...`)
 auf die Daten zugreifen:
 - **WF 01** → `GET /webhook/admin-artikel` (Artikeldaten, Bestellstatus, Datum)
 - **WF 03** → `GET /webhook/admin-bestellungen` (alle Bestellungen, Tokens)
@@ -180,7 +180,7 @@ als Kategorie "Allgemein" eingeordnet.
 In `webapp/index.html` nur die Base-URL anpassen – die Webhook-Pfade werden automatisch abgeleitet:
 
 ```javascript
-const N8N_BASE_URL = 'https://tracker-rubber-animation-accommodations.trycloudflare.com';
+const N8N_BASE_URL = 'https://yauno-n8n.duckdns.org';
 ```
 
 **Features:**
@@ -220,7 +220,7 @@ Für direkten n8n-Zugriff aus Claude Code heraus – in `.mcp.json` im Projektro
       "command": "npx",
       "args": ["-y", "@illuminaresystems/n8n-mcp-server"],
       "env": {
-        "N8N_HOST": "https://tracker-rubber-animation-accommodations.trycloudflare.com",
+        "N8N_HOST": "https://yauno-n8n.duckdns.org",
         "N8N_API_KEY": "DEIN_N8N_API_KEY"
       }
     },
