@@ -4,7 +4,7 @@
     {
       "parameters": {
         "httpMethod": "GET",
-        "path": "bestellung",
+        "path": "bestellung-get",
         "responseMode": "responseNode",
         "options": {
           "allowedOrigins": "*"

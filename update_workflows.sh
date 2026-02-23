@@ -2,16 +2,31 @@
 # ============================================
 # Yauno Bestellsystem – Workflow Update Script
 # ============================================
-# Aktualisiert die Workflows 02, 04, 05 in n8n
-# (URLs jetzt über $env.N8N_BASE_URL)
+# Aktualisiert bestehende Workflows in n8n
+# (findet Workflows anhand des Namens).
 #
-# Ausführen auf dem n8n-Server:
+# Voraussetzungen:
+#   export N8N_BASE_URL="https://deine-url.trycloudflare.com"
+#   export N8N_API_KEY="dein-api-key"
+#
+# Ausführen:
 #   chmod +x update_workflows.sh
 #   ./update_workflows.sh
 # ============================================
 
-N8N_URL="http://localhost:5678"
-API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNDFlYjNkYi1mOGRkLTRhZmEtODEzZS1lYzRmNTBhZGZmN2MiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzgwYTE0YzItNmYyYi00MjI4LTgzN2YtYTdhMDc1MjI5NTM1IiwiaWF0IjoxNzcxNzUyOTg0LCJleHAiOjE3NzQzMDY4MDB9.7zyzXBWexrzZGy7Mj7eLwwbN6fuNBqck4M_W5Qz4FSo"
+# Konfiguration aus Umgebungsvariablen
+N8N_URL="${N8N_BASE_URL:-http://localhost:5678}"
+API_KEY="${N8N_API_KEY:-}"
+
+if [ -z "$API_KEY" ]; then
+  echo "FEHLER: N8N_API_KEY Umgebungsvariable ist nicht gesetzt."
+  echo ""
+  echo "Setze sie mit:"
+  echo "  export N8N_API_KEY=\"dein-api-key\""
+  echo ""
+  echo "API Key erstellen: n8n -> Settings -> API -> Create API Key"
+  exit 1
+fi
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -25,6 +40,8 @@ echo "=========================================="
 echo "  Yauno Bestellsystem – Workflow Update"
 echo "=========================================="
 echo ""
+echo "n8n URL: $N8N_URL"
+echo ""
 
 # 1) API-Verbindung testen
 echo -n "Teste n8n API-Verbindung... "
@@ -34,7 +51,7 @@ HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
 
 if [ "$HTTP_CODE" != "200" ]; then
   echo -e "${RED}FEHLER${NC} (HTTP $HTTP_CODE)"
-  echo "  n8n läuft nicht oder API Key ungültig."
+  echo "  n8n laeuft nicht oder API Key ungueltig."
   exit 1
 fi
 echo -e "${GREEN}OK${NC}"
@@ -59,11 +76,13 @@ for wf in data.get('data', []):
 " 2>/dev/null
 }
 
-WF02_ID=$(find_workflow_id "02 - Artikel API")
-WF04_ID=$(find_workflow_id "04 - Bestellschluss & Auswertung")
-WF05_ID=$(find_workflow_id "05 - Bestellung laden (Token)")
-
-echo ""
+# Mapping: Dateiname -> Workflow-Name in n8n
+declare -A WF_MAP
+WF_MAP["workflow_01_excel_import.json"]="01 - Excel Import & Benachrichtigung"
+WF_MAP["workflow_02_artikel_api.json"]="02 - Artikel API"
+WF_MAP["workflow_03_bestellung_v2.json"]="03 - Bestellung speichern"
+WF_MAP["workflow_04_abschluss.json"]="04 - Bestellschluss & Auswertung"
+WF_MAP["workflow_05_get_order.json"]="05 - Bestellung laden (Token)"
 
 # 3) Workflows aktualisieren oder neu erstellen
 update_or_create_workflow() {
@@ -72,7 +91,7 @@ update_or_create_workflow() {
   local wf_name="$3"
 
   if [ ! -f "$wf_file" ]; then
-    echo -e "  ${RED}✗${NC} $wf_name – Datei nicht gefunden: $wf_file"
+    echo -e "  ${RED}x${NC} $wf_name – Datei nicht gefunden: $wf_file"
     return 1
   fi
 
@@ -86,7 +105,7 @@ json.dump(wf, sys.stdout)
 " 2>/dev/null)
 
   if [ -z "$PAYLOAD" ]; then
-    echo -e "  ${RED}✗${NC} $wf_name – JSON-Fehler"
+    echo -e "  ${RED}x${NC} $wf_name – JSON-Fehler"
     return 1
   fi
 
@@ -114,21 +133,25 @@ json.dump(wf, sys.stdout)
   if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
     local RESULT_ID=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null)
     if [ -n "$wf_id" ]; then
-      echo -e "  ${GREEN}✓${NC} $wf_name (ID: $RESULT_ID) – aktualisiert"
+      echo -e "  ${GREEN}OK${NC} $wf_name (ID: $RESULT_ID) – aktualisiert"
     else
-      echo -e "  ${GREEN}✓${NC} $wf_name (ID: $RESULT_ID) – neu erstellt"
+      echo -e "  ${GREEN}OK${NC} $wf_name (ID: $RESULT_ID) – neu erstellt"
     fi
   else
-    echo -e "  ${RED}✗${NC} $wf_name – Fehler (HTTP $HTTP_CODE)"
+    echo -e "  ${RED}x${NC} $wf_name – Fehler (HTTP $HTTP_CODE)"
     echo "    $(echo "$BODY" | head -1)"
   fi
 }
 
+echo ""
 echo "Aktualisiere Workflows..."
 echo ""
-update_or_create_workflow "$SCRIPT_DIR/workflows/workflow_02_artikel_api.json" "$WF02_ID" "02 - Artikel API"
-update_or_create_workflow "$SCRIPT_DIR/workflows/workflow_04_abschluss.json" "$WF04_ID" "04 - Bestellschluss & Auswertung"
-update_or_create_workflow "$SCRIPT_DIR/workflows/workflow_05_get_order.json" "$WF05_ID" "05 - Bestellung laden (Token)"
+
+for WF_FILE in "${!WF_MAP[@]}"; do
+  WF_NAME="${WF_MAP[$WF_FILE]}"
+  WF_ID=$(find_workflow_id "$WF_NAME")
+  update_or_create_workflow "$SCRIPT_DIR/workflows/$WF_FILE" "$WF_ID" "$WF_NAME"
+done
 
 echo ""
 echo "=========================================="
@@ -136,8 +159,5 @@ echo -e "${GREEN}Update abgeschlossen!${NC}"
 echo "=========================================="
 echo ""
 echo -e "${YELLOW}WICHTIG:${NC} Stelle sicher, dass die Umgebungsvariable N8N_BASE_URL gesetzt ist:"
-echo "  docker stop <container> && docker run -e N8N_BASE_URL=https://DEINE-URL.trycloudflare.com ..."
-echo ""
-echo "  Oder nachträglich prüfen:"
-echo "  docker exec <container> printenv N8N_BASE_URL"
+echo "  docker run -e N8N_BASE_URL=$N8N_URL ..."
 echo ""

@@ -1,5 +1,15 @@
-# MCP config (enthält API Keys)
+# MCP config (enthaelt API Keys)
 .mcp.json
 
-# Deploy-Script mit API-Key nicht committen
+# Deploy-Scripts mit API-Keys nicht committen
 deploy_to_n8n.ps1
+
+# Backups / Archive
+*.zip
+
+# OS-Dateien
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
