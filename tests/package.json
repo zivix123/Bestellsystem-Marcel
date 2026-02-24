@@ -1,0 +1,12 @@
+{
+  "name": "yauno-bestellsystem-tests",
+  "version": "1.0.0",
+  "description": "Unit tests for Yauno Bestellsystem workflows and webapp",
+  "scripts": {
+    "test": "jest --verbose",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
