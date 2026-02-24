@@ -377,6 +377,12 @@
 
   <!-- FOOTER -->
   <div class="footer-bar" id="footerBar" style="display:none;">
+    <div id="nameInputArea" style="display:none; padding: 4px 0 8px;">
+      <input type="text" id="inputName" placeholder="Dein Name *"
+        style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--border);
+               font-size:15px; font-family:inherit; background:var(--card); color:var(--text);
+               box-sizing:border-box;">
+    </div>
     <div class="footer-summary">
       <div>
         <span class="footer-items" id="footerItems">0 Artikel</span>
@@ -414,7 +420,13 @@
     }
 
     const chatId = tg?.initDataUnsafe?.user?.id || null;
-    const userName = tg?.initDataUnsafe?.user?.first_name || 'Gast';
+    const isTelegramUser = !!chatId;
+    const userName = tg?.initDataUnsafe?.user?.first_name || null;
+
+    // Namensfeld einblenden wenn kein Telegram-Kontext
+    if (!isTelegramUser) {
+      document.getElementById('nameInputArea').style.display = 'block';
+    }
 
     // Check for edit token in URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -641,6 +653,16 @@
       const btn = document.getElementById('btnOrder');
       if (btn.disabled) return;
 
+      // Externer User: Name pflichtfeld prüfen
+      const externalName = !isTelegramUser
+        ? document.getElementById('inputName')?.value?.trim()
+        : null;
+      if (!isTelegramUser && !externalName) {
+        document.getElementById('inputName').style.border = '1.5px solid var(--danger)';
+        document.getElementById('inputName').placeholder = 'Bitte Namen eingeben *';
+        return;
+      }
+
       btn.disabled = true;
       btn.textContent = 'Wird gesendet...';
 
@@ -660,9 +682,13 @@
 
       const gesamtpreis = positionen.reduce((s, p) => s + p.summe, 0);
 
+      const effectiveChatId = chatId || ('ext_' + Date.now());
+      const effectiveName = userName || externalName || 'Gast';
+
       const payload = {
-        chatId: chatId,
-        userName: userName,
+        chatId: effectiveChatId,
+        userName: effectiveName,
+        isTelegramUser: isTelegramUser,
         token: editToken,
         positionen: positionen,
         gesamtpreis: +gesamtpreis.toFixed(2),
