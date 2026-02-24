@@ -413,12 +413,12 @@
       tg.setBackgroundColor('#f4f1eb');
     }
 
-    const chatId = tg?.initDataUnsafe?.user?.id || null;
-    const userName = tg?.initDataUnsafe?.user?.first_name || 'Gast';
-
     // Check for edit token in URL
     const urlParams = new URLSearchParams(window.location.search);
     editToken = urlParams.get('token') || null;
+
+    const chatId = tg?.initDataUnsafe?.user?.id || urlParams.get('chatId') || null;
+    const userName = tg?.initDataUnsafe?.user?.first_name || urlParams.get('userName') || 'Gast';
 
     // ============================================================
     // DEMO DATA (Fallback wenn Server nicht erreichbar)
