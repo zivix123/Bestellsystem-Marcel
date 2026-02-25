@@ -358,9 +358,6 @@
     <span class="status-badge" id="statusBadge">Lädt...</span>
   </div>
 
-  <!-- EDIT BANNER -->
-  <div class="edit-banner" id="editBanner">✏️ BEARBEITEN-MODUS – Ändere deine Bestellung</div>
-
   <!-- OFFLINE BANNER -->
   <div class="offline-banner" id="offlineBanner">⏰ Bestellfenster geschlossen – Keine Bestellungen möglich</div>
 
@@ -399,38 +396,17 @@
     const N8N_BASE_URL           = 'https://yauno-n8n.duckdns.org';
     const WEBHOOK_ARTIKEL        = N8N_BASE_URL + '/webhook/artikel';
     const WEBHOOK_BESTELLUNG     = N8N_BASE_URL + '/webhook/bestellung';
-    const WEBHOOK_BESTELLUNG_GET = N8N_BASE_URL + '/webhook/bestellung-get';
 
     // ============================================================
     // STATE
     // ============================================================
     let artikel = [];
     let mengen = {};       // { artikelId: menge }
-    let editToken = null;
     let isOffline = false;
     let isDemoMode = false;
 
-    // Telegram WebApp
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-      tg.setHeaderColor('#2d6a4f');
-      tg.setBackgroundColor('#f4f1eb');
-    }
-
-    const chatId = tg?.initDataUnsafe?.user?.id || null;
-    const isTelegramUser = !!chatId;
-    const userName = tg?.initDataUnsafe?.user?.first_name || null;
-
-    // Namensfeld einblenden wenn kein Telegram-Kontext
-    if (!isTelegramUser) {
-      document.getElementById('nameInputArea').style.display = 'block';
-    }
-
-    // Check for edit token in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    editToken = urlParams.get('token') || null;
+    // Namensfeld immer anzeigen (WhatsApp-Modus)
+    document.getElementById('nameInputArea').style.display = 'block';
 
     // ============================================================
     // DEMO DATA (Fallback wenn Server nicht erreichbar)
@@ -473,24 +449,6 @@
         console.warn('Server nicht erreichbar, verwende Demo-Daten:', err);
         isDemoMode = true;
         artikel = DEMO_ARTIKEL;
-      }
-
-      // 2) Edit-Modus? Bestellung laden
-      if (editToken && !isDemoMode) {
-        try {
-          const res = await fetch(`${WEBHOOK_BESTELLUNG_GET}?token=${editToken}`, { method: 'GET' });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.positionen) {
-              data.positionen.forEach(p => {
-                if (p.menge > 0) mengen[p.artikelId] = p.menge;
-              });
-            }
-            document.getElementById('editBanner').classList.add('active');
-          }
-        } catch (err) {
-          console.warn('Bestellung konnte nicht geladen werden:', err);
-        }
       }
 
       render();
@@ -639,9 +597,7 @@
 
       const btn = document.getElementById('btnOrder');
       btn.disabled = totalItems === 0 || isOffline;
-      btn.textContent = editToken
-        ? (totalItems > 0 ? 'Bestellung aktualisieren' : 'Keine Artikel gewählt')
-        : (totalItems > 0 ? 'Bestellung absenden' : 'Wähle Artikel aus');
+      btn.textContent = totalItems > 0 ? 'Bestellung absenden' : 'Wähle Artikel aus';
     }
 
     // ============================================================
@@ -653,11 +609,9 @@
       const btn = document.getElementById('btnOrder');
       if (btn.disabled) return;
 
-      // Externer User: Name pflichtfeld prüfen
-      const externalName = !isTelegramUser
-        ? document.getElementById('inputName')?.value?.trim()
-        : null;
-      if (!isTelegramUser && !externalName) {
+      // Name ist Pflichtfeld
+      const name = document.getElementById('inputName')?.value?.trim();
+      if (!name) {
         document.getElementById('inputName').style.border = '1.5px solid var(--danger)';
         document.getElementById('inputName').placeholder = 'Bitte Namen eingeben *';
         return;
@@ -682,14 +636,8 @@
 
       const gesamtpreis = positionen.reduce((s, p) => s + p.summe, 0);
 
-      const effectiveChatId = chatId || ('ext_' + Date.now());
-      const effectiveName = userName || externalName || 'Gast';
-
       const payload = {
-        chatId: effectiveChatId,
-        userName: effectiveName,
-        isTelegramUser: isTelegramUser,
-        token: editToken,
+        userName: name,
         positionen: positionen,
         gesamtpreis: +gesamtpreis.toFixed(2),
         zeitpunkt: new Date().toISOString()
@@ -711,14 +659,15 @@
 
         if (!res.ok) throw new Error('Server-Fehler');
 
-        const data = await res.json();
+        showToast('Bestellung gesendet! ✅');
 
-        showToast(editToken ? 'Bestellung aktualisiert! ✅' : 'Bestellung gesendet! ✅');
-
-        // Close WebApp after short delay
-        if (tg) {
-          setTimeout(() => tg.close(), 1500);
-        }
+        // Formular zurücksetzen nach Absenden
+        setTimeout(() => {
+          mengen = {};
+          document.getElementById('inputName').value = '';
+          document.getElementById('inputName').style.border = '';
+          render();
+        }, 1500);
       } catch (err) {
         console.error('Bestellfehler:', err);
         showToast('Fehler beim Senden. Bitte erneut versuchen.', 'error');
