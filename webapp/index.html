@@ -614,15 +614,20 @@
         totalItems === 1 ? '1 Artikel' : `${totalItems} Artikel`;
       document.getElementById('footerTotal').textContent = formatCurrency(totalPrice);
 
+      const hasName = (document.getElementById('inputName')?.value?.trim() || '') !== '';
       const btn = document.getElementById('btnOrder');
-      btn.disabled = totalItems === 0 || isOffline;
-      btn.textContent = totalItems > 0 ? 'Bestellung absenden' : 'Wähle Artikel aus';
+      btn.disabled = totalItems === 0 || !hasName || isOffline;
+      if (isOffline) btn.textContent = 'Bestellfenster geschlossen';
+      else if (!hasName) btn.textContent = 'Name eingeben';
+      else if (totalItems === 0) btn.textContent = 'Wähle Artikel aus';
+      else btn.textContent = 'Bestellung absenden';
     }
 
     // ============================================================
     // BESTELLEN
     // ============================================================
     document.getElementById('btnOrder').addEventListener('click', submitOrder);
+    document.getElementById('inputName').addEventListener('input', updateFooter);
 
     async function submitOrder() {
       const btn = document.getElementById('btnOrder');
@@ -735,7 +740,7 @@
     // HELPERS
     // ============================================================
     function formatCurrency(val) {
-      return '€' + val.toFixed(2).replace('.', ',');
+      return '€' + Number(val).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     function showToast(msg, type = '') {
