@@ -219,6 +219,45 @@ npm test
 - **Bestätigung an Käufer:** Node aus dem aktiven Flow entfernt (kein Telegram-Käufer mehr).
   Admin bekommt weiterhin Benachrichtigung bei jeder neuen Bestellung.
 
+## Tagesprotokoll 25.02.2026 (Abend)
+
+### Was heute (Abend) erledigt wurde:
+
+- **Tagesabschluss täglich:** Cron von `0 20 * * 3` (nur Mittwoch) auf `5 20 * * *` (täglich 20:05) geändert.
+  Node umbenannt: "Täglich 20:05".
+
+- **Zwei separate Excel-Dateien:** Tagesabschluss sendet jetzt ZWEI Excel-Dateien getrennt:
+  1. **Sammelbestellung.xlsx** – alle Artikel summiert (für Einkauf)
+  2. **Packliste.xlsx** – pro Besteller mit Artikeln, Mengen und Preisen
+  Flow: Zusammenfassung (Text) → Sammel-Excel senden → Packliste senden → Aufräumen
+
+- **Bot-Befehle mit Excel:** `/bestellungen` und `/sammelbestellung` senden jetzt zusätzlich
+  zur Textnachricht auch eine Excel-Datei:
+  - `/bestellungen` → Packliste.xlsx
+  - `/sammelbestellung` → Sammelbestellung.xlsx
+  Neuer Flow nach Bot-Antwort senden: Bot Hat Excel? → Bot-Split-Excel-Rows → Bot-Excel-Erstellen → Bot-Excel-Senden
+
+- **Dual-Admin in Workflow-JSONs (workflows/):** Alle drei archivierten Workflow-JSON-Dateien unterstützen jetzt zwei Admins:
+  - Admin 1: `1121266642`, Admin 2: `1127196500`
+  - `Ist Admin?` (WF01): OR-Bedingung mit beiden IDs
+  - Vor jedem Admin-Telegram-Node: Code-Node iteriert über beide IDs
+  - Alle betroffenen Telegram-Nodes nutzen `={{ $json.chatId }}`
+  - Betroffene Nodes: Admin Bestätigung (WF01), Admin benachrichtigen + Mengenwarnung (WF03), Zusammenfassung senden + Excel senden + Keine Bestellungen (WF04)
+
+- **Dual-Admin im aktiven SQLite-Workflow:** `check-admin` Node (aktiver Workflow) hat jetzt
+  OR-Bedingung mit beiden Admin-IDs → Admin 2 kann jetzt auch Excel-Dateien an den Bot schicken
+  (vorher: nur Bestellungen abrufen möglich, weil check-admin nur Admin 1 akzeptierte)
+
+- **Excel-Dateinamen mit Datum:** Alle Excel-Dateien haben jetzt Datum im Dateinamen:
+  - Tagesabschluss: `Sammelbestellung_TT.MM.JJJJ.xlsx` und `Packliste_TT.MM.JJJJ.xlsx`
+  - Bot `/bestellungen`: `Bestellungen_TT.MM.JJJJ.xlsx` (war: Packliste.xlsx)
+  - Bot `/sammelbestellung`: `Sammelbestellung_TT.MM.JJJJ.xlsx`
+
+- **Scroll-to-Top-Button:** Erscheint auf der WebApp ab 300px Scroll-Tiefe, scrollt sanft nach oben.
+  Position: rechts unten (bottom: 120px), über dem Footer.
+
+- **Header umbenannt:** WebApp-Header von "🥬 Yauno Bestellung" → "🧺 Lebensmittel-Rettung Blomberg"
+
 ## Tagesprotokoll 24.02.2026
 
 ### Was heute erledigt wurde:
@@ -248,6 +287,25 @@ npm test
 
 ---
 
+## Für morgen (26.02.2026)
+
+### Priorität 1 – Admin 2 aktivieren
+1. Admin 2 öffnet Telegram → sucht `@Mamos158_bot` → tippt `/start`
+2. Admin 2 schickt `/bestellungen` → prüfen: kommt Text + Excel-Datei?
+3. Admin 2 schickt eine Test-Excel-Datei → prüfen: wird als Admin erkannt, Import läuft?
+
+### Priorität 2 – Tagesabschluss testen
+1. In n8n: Workflow "Tagesabschluss" → manuellen Trigger auslösen
+2. Prüfen: kommen ZWEI Excel-Dateien? Dateinamen mit Datum?
+3. Prüfen: wird Bestellfenster danach geschlossen?
+
+### Priorität 3 – WebApp End-to-End
+1. WebApp-Link öffnen (auch aus WhatsApp/Browser) → Namensfeld sichtbar?
+2. Artikel auswählen → Bestellung absenden → Toast erscheint?
+3. Nochmal bestellen mit gleichem Namen → zweiter Eintrag im Array?
+
+---
+
 ## TODO
 
 ### 🔴 Kritisch – End-to-End Tests
@@ -265,6 +323,15 @@ npm test
       SAMMELBESTELLUNG + PACKLISTE + Telegram-Nachricht mit Sammelbestellung kommt an
 
 - [ ] **Test Bestellfenster schließen:** WebApp zeigt roten Offline-Banner
+
+- [ ] **Test Bot-Excel:** `/bestellungen` und `/sammelbestellung` senden nach Text auch Excel-Datei
+      → Dateiname enthält Datum (z.B. `Bestellungen_25.2.2026.xlsx`)
+
+- [ ] **Test Tagesabschluss täglich:** Manuellen Trigger auslösen → zwei separate Excel-Dateien kommen an
+      → Dateinamen enthalten Datum (z.B. `Sammelbestellung_25.02.2026.xlsx`)
+
+- [ ] **Test Admin 2 Excel-Upload:** Admin 2 (1127196500) schickt Excel-Datei an Bot
+      → Wird als Admin erkannt, Import funktioniert
 
 ### ⚪ Optional / Nice-to-Have
 

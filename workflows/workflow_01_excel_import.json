@@ -3,14 +3,19 @@
   "nodes": [
     {
       "parameters": {
-        "updates": ["message"],
+        "updates": [
+          "message"
+        ],
         "additionalFields": {}
       },
       "id": "trigger-telegram",
       "name": "Telegram Trigger",
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.1,
-      "position": [200, 300],
+      "position": [
+        200,
+        300
+      ],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -41,17 +46,28 @@
       "name": "Ist Excel?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [420, 300]
+      "position": [
+        420,
+        300
+      ]
     },
     {
       "parameters": {
         "conditions": {
           "options": {},
-          "combinator": "and",
+          "combinator": "or",
           "conditions": [
             {
               "leftValue": "={{ $json.message.chat.id }}",
-              "rightValue": "1121266642",
+              "rightValue": 1121266642,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            },
+            {
+              "leftValue": "={{ $json.message.chat.id }}",
+              "rightValue": 1127196500,
               "operator": {
                 "type": "number",
                 "operation": "equals"
@@ -64,7 +80,10 @@
       "name": "Ist Admin?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [640, 240]
+      "position": [
+        640,
+        240
+      ]
     },
     {
       "parameters": {
@@ -75,7 +94,10 @@
       "name": "Get File Path",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [860, 240]
+      "position": [
+        860,
+        240
+      ]
     },
     {
       "parameters": {
@@ -92,7 +114,10 @@
       "name": "Download Excel",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1080, 240]
+      "position": [
+        1080,
+        240
+      ]
     },
     {
       "parameters": {
@@ -107,7 +132,10 @@
       "name": "Excel zu JSON",
       "type": "n8n-nodes-base.spreadsheetFile",
       "typeVersion": 2,
-      "position": [1300, 240]
+      "position": [
+        1300,
+        240
+      ]
     },
     {
       "parameters": {
@@ -117,11 +145,14 @@
       "name": "Artikel extrahieren",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1620, 240]
+      "position": [
+        1620,
+        240
+      ]
     },
     {
       "parameters": {
-        "chatId": "1121266642",
+        "chatId": "={{ $json.chatId }}",
         "text": "=✅ *Neues Angebot hochgeladen!*\n\n📅 Lieferdatum: {{ $json.datum }}\n📦 {{ $json.artikel_count }} Artikel geladen\n\nKäufer werden jetzt benachrichtigt.",
         "additionalFields": {
           "parse_mode": "Markdown"
@@ -131,7 +162,10 @@
       "name": "Admin Bestätigung",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1740, 160],
+      "position": [
+        1740,
+        160
+      ],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -147,7 +181,10 @@
       "name": "Käufer laden",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1740, 340]
+      "position": [
+        1740,
+        340
+      ]
     },
     {
       "parameters": {
@@ -170,7 +207,10 @@
       "name": "Käufer vorhanden?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1960, 340]
+      "position": [
+        1960,
+        340
+      ]
     },
     {
       "parameters": {
@@ -201,7 +241,10 @@
       "name": "Käufer benachrichtigen",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [2180, 280],
+      "position": [
+        2180,
+        280
+      ],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -219,7 +262,10 @@
       "name": "Nicht Admin",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [860, 420],
+      "position": [
+        860,
+        420
+      ],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -239,7 +285,10 @@
       "name": "Alte Bestellungen löschen",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1400, 240]
+      "position": [
+        1400,
+        240
+      ]
     },
     {
       "parameters": {
@@ -252,7 +301,10 @@
       "name": "Webhook Admin Artikel",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [200, 600],
+      "position": [
+        200,
+        600
+      ],
       "webhookId": "admin-artikel"
     },
     {
@@ -263,7 +315,10 @@
       "name": "Admin Artikeldaten",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 600]
+      "position": [
+        420,
+        600
+      ]
     },
     {
       "parameters": {
@@ -271,8 +326,14 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Access-Control-Allow-Origin", "value": "*" },
-              { "name": "Content-Type", "value": "application/json" }
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
             ]
           }
         }
@@ -281,57 +342,182 @@
       "name": "Admin Artikel Respond",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [640, 600]
+      "position": [
+        640,
+        600
+      ]
+    },
+    {
+      "id": "admins-wf01",
+      "name": "Admins WF01",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        160
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst ADMINS = ['1121266642', '1127196500'];\nreturn ADMINS.map(id => ({\n  json: { ...item.json, chatId: id },\n  binary: item.binary\n}));"
+      }
     }
   ],
   "connections": {
     "Telegram Trigger": {
-      "main": [[{ "node": "Ist Excel?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Ist Excel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Ist Excel?": {
       "main": [
-        [{ "node": "Ist Admin?", "type": "main", "index": 0 }],
+        [
+          {
+            "node": "Ist Admin?",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
     },
     "Ist Admin?": {
       "main": [
-        [{ "node": "Get File Path", "type": "main", "index": 0 }],
-        [{ "node": "Nicht Admin", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Get File Path",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nicht Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Get File Path": {
-      "main": [[{ "node": "Download Excel", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Download Excel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Download Excel": {
-      "main": [[{ "node": "Excel zu JSON", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Excel zu JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Excel zu JSON": {
-      "main": [[{ "node": "Alte Bestellungen löschen", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Alte Bestellungen löschen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Alte Bestellungen löschen": {
-      "main": [[{ "node": "Artikel extrahieren", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Artikel extrahieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Artikel extrahieren": {
-      "main": [[
-        { "node": "Admin Bestätigung", "type": "main", "index": 0 },
-        { "node": "Käufer laden", "type": "main", "index": 0 }
-      ]]
+      "main": [
+        [
+          {
+            "node": "Admins WF01",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Käufer laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Käufer laden": {
-      "main": [[{ "node": "Käufer vorhanden?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Käufer vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Käufer vorhanden?": {
       "main": [
-        [{ "node": "Käufer benachrichtigen", "type": "main", "index": 0 }],
+        [
+          {
+            "node": "Käufer benachrichtigen",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
     },
     "Webhook Admin Artikel": {
-      "main": [[{ "node": "Admin Artikeldaten", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Admin Artikeldaten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Admin Artikeldaten": {
-      "main": [[{ "node": "Admin Artikel Respond", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Admin Artikel Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admins WF01": {
+      "main": [
+        [
+          {
+            "node": "Admin Bestätigung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -348,5 +534,9 @@
       "webapp_url": "https://jade-alfajores-4f3440.netlify.app"
     }
   },
-  "tags": [{ "name": "Yauno" }]
+  "tags": [
+    {
+      "name": "Yauno"
+    }
+  ]
 }

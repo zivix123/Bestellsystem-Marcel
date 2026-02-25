@@ -16,7 +16,10 @@
       "name": "Mittwoch 20:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [200, 300]
+      "position": [
+        200,
+        300
+      ]
     },
     {
       "parameters": {
@@ -29,7 +32,10 @@
       "name": "Bestellungen von WF03 laden",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [420, 300]
+      "position": [
+        420,
+        300
+      ]
     },
     {
       "parameters": {
@@ -42,7 +48,10 @@
       "name": "Artikel von WF01 laden",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [420, 480]
+      "position": [
+        420,
+        480
+      ]
     },
     {
       "parameters": {
@@ -52,7 +61,10 @@
       "name": "Auswertung vorbereiten",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [700, 300]
+      "position": [
+        700,
+        300
+      ]
     },
     {
       "parameters": {
@@ -75,7 +87,10 @@
       "name": "Bestellungen vorhanden?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [920, 300]
+      "position": [
+        920,
+        300
+      ]
     },
     {
       "parameters": {
@@ -85,7 +100,10 @@
       "name": "Zeilen aufteilen",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1140, 240]
+      "position": [
+        1140,
+        240
+      ]
     },
     {
       "parameters": {
@@ -98,11 +116,14 @@
       "name": "Excel erstellen",
       "type": "n8n-nodes-base.spreadsheetFile",
       "typeVersion": 2,
-      "position": [1360, 240]
+      "position": [
+        1360,
+        240
+      ]
     },
     {
       "parameters": {
-        "chatId": "1121266642",
+        "chatId": "={{ $json.chatId }}",
         "text": "=📊 *Bestellschluss – Auswertung*\n\n📅 Lieferdatum: {{ $('Auswertung vorbereiten').item.json.datum }}\n🛒 {{ $('Auswertung vorbereiten').item.json.anzahlBestellungen }} Bestellungen\n💰 Gesamt: €{{ $('Auswertung vorbereiten').item.json.gesamtUmsatz.toFixed(2).replace('.', ',') }}\n\n📎 Excel-Auswertung siehe Anhang ⬇️",
         "additionalFields": {
           "parse_mode": "Markdown"
@@ -112,7 +133,10 @@
       "name": "Zusammenfassung senden",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1580, 160],
+      "position": [
+        1580,
+        160
+      ],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -123,7 +147,7 @@
     {
       "parameters": {
         "operation": "sendDocument",
-        "chatId": "1121266642",
+        "chatId": "={{ $json.chatId }}",
         "binaryData": true,
         "binaryPropertyName": "data",
         "additionalFields": {
@@ -134,7 +158,10 @@
       "name": "Excel senden",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1580, 340],
+      "position": [
+        1580,
+        340
+      ],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -154,11 +181,14 @@
       "name": "Aufräumen (WF03 schließen)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1800, 300]
+      "position": [
+        1800,
+        300
+      ]
     },
     {
       "parameters": {
-        "chatId": "1121266642",
+        "chatId": "={{ $json.chatId }}",
         "text": "📭 Bestellschluss – Keine Bestellungen diese Woche eingegangen.",
         "additionalFields": {}
       },
@@ -166,7 +196,10 @@
       "name": "Keine Bestellungen",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1140, 420],
+      "position": [
+        1140,
+        420
+      ],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -186,49 +219,184 @@
       "name": "Aufräumen keine Bestellungen",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1360, 420]
+      "position": [
+        1360,
+        420
+      ]
+    },
+    {
+      "id": "admins-abschluss",
+      "name": "Admins Abschluss",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        260
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst ADMINS = ['1121266642', '1127196500'];\nreturn ADMINS.map(id => ({\n  json: { ...item.json, chatId: id },\n  binary: item.binary\n}));"
+      }
+    },
+    {
+      "id": "admins-keine",
+      "name": "Admins Keine Bestellung",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        920,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst ADMINS = ['1121266642', '1127196500'];\nreturn ADMINS.map(id => ({\n  json: { ...item.json, chatId: id },\n  binary: item.binary\n}));"
+      }
     }
   ],
   "connections": {
     "Mittwoch 20:00": {
-      "main": [[
-        { "node": "Bestellungen von WF03 laden", "type": "main", "index": 0 },
-        { "node": "Artikel von WF01 laden", "type": "main", "index": 0 }
-      ]]
+      "main": [
+        [
+          {
+            "node": "Bestellungen von WF03 laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Artikel von WF01 laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Bestellungen von WF03 laden": {
-      "main": [[{ "node": "Auswertung vorbereiten", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Auswertung vorbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Artikel von WF01 laden": {
-      "main": [[{ "node": "Auswertung vorbereiten", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Auswertung vorbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Auswertung vorbereiten": {
-      "main": [[{ "node": "Bestellungen vorhanden?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Bestellungen vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Bestellungen vorhanden?": {
       "main": [
-        [{ "node": "Zeilen aufteilen", "type": "main", "index": 0 }],
-        [{ "node": "Keine Bestellungen", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Zeilen aufteilen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Admins Keine Bestellung",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Zeilen aufteilen": {
-      "main": [[{ "node": "Excel erstellen", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Excel erstellen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Excel erstellen": {
-      "main": [[
-        { "node": "Zusammenfassung senden", "type": "main", "index": 0 },
-        { "node": "Excel senden", "type": "main", "index": 0 }
-      ]]
+      "main": [
+        [
+          {
+            "node": "Admins Abschluss",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Excel senden": {
-      "main": [[{ "node": "Aufräumen (WF03 schließen)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Aufräumen (WF03 schließen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Keine Bestellungen": {
-      "main": [[{ "node": "Aufräumen keine Bestellungen", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Aufräumen keine Bestellungen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admins Abschluss": {
+      "main": [
+        [
+          {
+            "node": "Zusammenfassung senden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Excel senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admins Keine Bestellung": {
+      "main": [
+        [
+          {
+            "node": "Keine Bestellungen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1"
   },
-  "tags": [{ "name": "Yauno" }]
+  "tags": [
+    {
+      "name": "Yauno"
+    }
+  ]
 }

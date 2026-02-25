@@ -15,7 +15,10 @@
       "name": "Webhook Bestellung",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [200, 300],
+      "position": [
+        200,
+        300
+      ],
       "webhookId": "bestellung"
     },
     {
@@ -26,7 +29,10 @@
       "name": "Bestellung speichern",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 300]
+      "position": [
+        420,
+        300
+      ]
     },
     {
       "parameters": {
@@ -49,7 +55,10 @@
       "name": "Erfolgreich?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [640, 300]
+      "position": [
+        640,
+        300
+      ]
     },
     {
       "parameters": {
@@ -57,8 +66,14 @@
           "responseCode": "={{ $json.status || 200 }}",
           "responseHeaders": {
             "entries": [
-              { "name": "Access-Control-Allow-Origin", "value": "*" },
-              { "name": "Content-Type", "value": "application/json" }
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
             ]
           }
         }
@@ -67,7 +82,10 @@
       "name": "Respond OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [860, 220]
+      "position": [
+        860,
+        220
+      ]
     },
     {
       "parameters": {
@@ -98,7 +116,10 @@
       "name": "Bestätigung an Käufer",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [860, 400],
+      "position": [
+        860,
+        400
+      ],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -108,7 +129,7 @@
     },
     {
       "parameters": {
-        "chatId": "1121266642",
+        "chatId": "={{ $json.chatId }}",
         "text": "=🛒 *{{ $json.isUpdate ? 'Bestellung geändert' : 'Neue Bestellung' }}*\n\n👤 {{ $json.userName }}\n💰 €{{ $json.gesamtpreis.toFixed(2).replace('.', ',') }}",
         "additionalFields": {
           "parse_mode": "Markdown"
@@ -118,7 +139,10 @@
       "name": "Admin benachrichtigen",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1080, 400],
+      "position": [
+        1080,
+        400
+      ],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -132,8 +156,14 @@
           "responseCode": "={{ $json.status || 400 }}",
           "responseHeaders": {
             "entries": [
-              { "name": "Access-Control-Allow-Origin", "value": "*" },
-              { "name": "Content-Type", "value": "application/json" }
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
             ]
           }
         }
@@ -142,7 +172,10 @@
       "name": "Respond Error",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [860, 480]
+      "position": [
+        860,
+        480
+      ]
     },
     {
       "parameters": {
@@ -165,11 +198,14 @@
       "name": "Hohe Menge?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1300, 400]
+      "position": [
+        1300,
+        400
+      ]
     },
     {
       "parameters": {
-        "chatId": "1121266642",
+        "chatId": "={{ $json.chatId }}",
         "text": "=⚠️ *Mengenwarnung!*\n\n👤 {{ $json.userName }} hat ungewöhnlich hohe Mengen bestellt:\n📦 {{ $json.highQtyItems }}\n\n💰 Gesamt: €{{ $json.gesamtpreis.toFixed(2).replace('.', ',') }}",
         "additionalFields": {
           "parse_mode": "Markdown"
@@ -179,7 +215,10 @@
       "name": "Mengenwarnung an Admin",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1520, 340],
+      "position": [
+        1520,
+        340
+      ],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -198,7 +237,10 @@
       "name": "Webhook Admin Bestellungen",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [200, 700],
+      "position": [
+        200,
+        700
+      ],
       "webhookId": "admin-bestellungen"
     },
     {
@@ -209,7 +251,10 @@
       "name": "Admin Bestelldaten",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 700]
+      "position": [
+        420,
+        700
+      ]
     },
     {
       "parameters": {
@@ -217,8 +262,14 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Access-Control-Allow-Origin", "value": "*" },
-              { "name": "Content-Type", "value": "application/json" }
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
             ]
           }
         }
@@ -227,7 +278,10 @@
       "name": "Admin Bestellungen Respond",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [640, 700]
+      "position": [
+        640,
+        700
+      ]
     },
     {
       "parameters": {
@@ -240,7 +294,10 @@
       "name": "Webhook Admin Close",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [200, 900],
+      "position": [
+        200,
+        900
+      ],
       "webhookId": "admin-close"
     },
     {
@@ -251,7 +308,10 @@
       "name": "Bestellungen schließen",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 900]
+      "position": [
+        420,
+        900
+      ]
     },
     {
       "parameters": {
@@ -259,7 +319,10 @@
           "responseCode": 200,
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
             ]
           }
         }
@@ -268,48 +331,183 @@
       "name": "Admin Close Respond",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [640, 900]
+      "position": [
+        640,
+        900
+      ]
+    },
+    {
+      "id": "admins-notify",
+      "name": "Admins Admin Notify",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        400
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst ADMINS = ['1121266642', '1127196500'];\nreturn ADMINS.map(id => ({\n  json: { ...item.json, chatId: id },\n  binary: item.binary\n}));"
+      }
+    },
+    {
+      "id": "admins-qty",
+      "name": "Admins Mengenwarnung",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        340
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst ADMINS = ['1121266642', '1127196500'];\nreturn ADMINS.map(id => ({\n  json: { ...item.json, chatId: id },\n  binary: item.binary\n}));"
+      }
     }
   ],
   "connections": {
     "Webhook Bestellung": {
-      "main": [[{ "node": "Bestellung speichern", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Bestellung speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Bestellung speichern": {
-      "main": [[{ "node": "Erfolgreich?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Erfolgreich?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Erfolgreich?": {
       "main": [
         [
-          { "node": "Respond OK", "type": "main", "index": 0 },
-          { "node": "Bestätigung an Käufer", "type": "main", "index": 0 }
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Bestätigung an Käufer",
+            "type": "main",
+            "index": 0
+          }
         ],
-        [{ "node": "Respond Error", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Bestätigung an Käufer": {
-      "main": [[{ "node": "Admin benachrichtigen", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Admins Admin Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Admin benachrichtigen": {
-      "main": [[{ "node": "Hohe Menge?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Hohe Menge?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Hohe Menge?": {
       "main": [
-        [{ "node": "Mengenwarnung an Admin", "type": "main", "index": 0 }],
+        [
+          {
+            "node": "Admins Mengenwarnung",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
     },
     "Webhook Admin Bestellungen": {
-      "main": [[{ "node": "Admin Bestelldaten", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Admin Bestelldaten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Admin Bestelldaten": {
-      "main": [[{ "node": "Admin Bestellungen Respond", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Admin Bestellungen Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Webhook Admin Close": {
-      "main": [[{ "node": "Bestellungen schließen", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Bestellungen schließen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Bestellungen schließen": {
-      "main": [[{ "node": "Admin Close Respond", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Admin Close Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admins Admin Notify": {
+      "main": [
+        [
+          {
+            "node": "Admin benachrichtigen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Admins Mengenwarnung": {
+      "main": [
+        [
+          {
+            "node": "Mengenwarnung an Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -324,5 +522,9 @@
       "webapp_url": "https://jade-alfajores-4f3440.netlify.app"
     }
   },
-  "tags": [{ "name": "Yauno" }]
+  "tags": [
+    {
+      "name": "Yauno"
+    }
+  ]
 }
