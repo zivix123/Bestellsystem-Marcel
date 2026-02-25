@@ -191,6 +191,34 @@ npm test
 
 ---
 
+## Tagesprotokoll 25.02.2026
+
+### Was heute erledigt wurde:
+
+- **WhatsApp-Modus:** System vollständig auf externe Bestellungen (WhatsApp-Link) umgestellt.
+  Kein Telegram-Kontext mehr auf Besteller-Seite.
+
+- **Datenstruktur geändert:** `bestellungen` von Object (`{chatId: {...}}`) zu Array (`[...]`).
+  Jede Bestellung ist ein eigener Eintrag — kein Überschreiben, auch bei gleichem Namen.
+
+- **Bestellung speichern (Workflow):** Nur noch `name` als Identifier. Kein Token-System mehr.
+  Jede Bestellung bekommt eine eindeutige `id` (`ord_...`).
+
+- **WebApp (index.html):** Namensfeld immer sichtbar und Pflichtfeld. Edit-Modus, Token-Handling
+  und Telegram-Kontext komplett entfernt. Formular wird nach Absenden zurückgesetzt.
+
+- **Tagesabschluss (WF04):** Excel enthält jetzt zwei Sektionen:
+  1. **SAMMELBESTELLUNG** – alle Artikel über alle Bestellungen summiert (für Einkauf)
+  2. **PACKLISTE** – pro Besteller mit Artikeln, Mengen und Preisen
+  Telegram-Nachricht zeigt Sammelbestellung als Text.
+
+- **Bot-Befehle:** Zwei neue Nodes im Workflow. Über Telegram-Bot abrufbar:
+  - `/bestellungen` – alle Einzelbestellungen mit Positionen und Preisen
+  - `/sammelbestellung` – alle Artikel summiert für Bestellung
+
+- **Bestätigung an Käufer:** Node aus dem aktiven Flow entfernt (kein Telegram-Käufer mehr).
+  Admin bekommt weiterhin Benachrichtigung bei jeder neuen Bestellung.
+
 ## Tagesprotokoll 24.02.2026
 
 ### Was heute erledigt wurde:
@@ -220,57 +248,29 @@ npm test
 
 ---
 
-## TODO für morgen
+## TODO
 
 ### 🔴 Kritisch – End-to-End Tests
 
-- [ ] **Test 2:** Bestellung aufgeben (aus Telegram heraus) → Bestätigung + Bearbeitungslink
-      per Telegram kommt an. chatId und Token werden korrekt gesetzt.
+- [ ] **Test WebApp:** Link öffnen → Namensfeld sichtbar, Artikel auswählbar, Bestellung absenden
+      → Formular leert sich, Toast erscheint, Eintrag in n8n Static Data vorhanden
 
-- [ ] **Test 3:** Bearbeitungslink klicken → grüner BEARBEITEN-Banner, alte Mengen geladen,
-      Änderung speichern → Token bleibt gleich.
+- [ ] **Test mehrfache Bestellung:** Gleichem Namen nochmal bestellen → zweiter Eintrag
+      im Array (kein Überschreiben)
 
-- [ ] **Test 4:** Bestellfenster schließen (WF04 manuell oder Admin-Close-Webhook) →
-      roter Offline-Banner in WebApp erscheint, keine neuen Bestellungen möglich.
+- [ ] **Test Bot-Befehle:** Im Telegram-Bot `/bestellungen` und `/sammelbestellung` senden
+      → korrekte Antworten
 
-- [ ] **Test 5:** WF04 manuell triggern → Excel-Auswertung kommt per Telegram an Admin.
-      Webhook: POST /webhook/... (Manueller Abschluss-Trigger – genaue URL prüfen).
+- [ ] **Test Tagesabschluss:** Manuellen Abschluss-Trigger auslösen → Excel mit
+      SAMMELBESTELLUNG + PACKLISTE + Telegram-Nachricht mit Sammelbestellung kommt an
 
-### 🟡 Bugs fixen
-
-- [ ] **isUpdate-Bug fixen:** In Workflow "Bestellung speichern" (Code-Node):
-  ```javascript
-  // ALT (fehlerhaft):
-  const isUpdate = !!body.token;
-  // NEU (korrekt):
-  const isUpdate = !!body.token && !!(staticData.tokens || {})[body.token];
-  ```
-
-- [ ] **webapp_url in Static Data prüfen:** Steht in der Static Data des Workflows
-  die korrekte Netlify-URL? Käufer-Benachrichtigung nutzt `staticData.webapp_url`.
-  Prüfen via: n8n → Workflow → Settings → Static Data → `webapp_url`
-
-### 🟢 Käufer verwalten
-
-- [ ] **Echte Käufer eintragen:** Aktuell ist nur Admin-ID `1121266642` in der Käufer-Liste.
-  Weitere Käufer-IDs hinzufügen (Static Data → `kaeufer`-Array) oder
-  Bot-Befehl `/add_buyer` implementieren.
-
-- [ ] **Käufer-Registrierung testen:** Neue Bestellung von unbekannter Chat-ID →
-  wird automatisch in `kaeufer[]` eingetragen?
-
-### 🔵 Workflow-Export aktualisieren
-
-- [ ] **workflow_komplett.json exportieren:** Der aktive Workflow in n8n ist weiterentwickelt
-  worden (3 neue Nodes, Bugfixes). Die Datei `workflows/workflow_komplett.json` ist veraltet.
-  Export via: n8n → Workflow → Download → als `workflow_komplett.json` speichern.
+- [ ] **Test Bestellfenster schließen:** WebApp zeigt roten Offline-Banner
 
 ### ⚪ Optional / Nice-to-Have
 
-- [ ] Käufer-Verwaltung per Bot-Befehle (`/add_buyer <chat_id>`, `/remove_buyer <chat_id>`)
+- [ ] Rate-Limiting (max. N Bestellungen pro Name pro Tag)
 - [ ] Admin-Dashboard: Status-Webhook testen (`/webhook/admin-status`)
-- [ ] Rate-Limiting für Bestellungen (max. 1 Bestellung pro Chat-ID pro Stunde)
-- [ ] Backup der Static Data (Bestellungen) vor Workflow 04 Ausführung
+- [ ] Backup der Static Data vor Workflow 04 Ausführung
 
 ---
 
